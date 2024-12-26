@@ -1,6 +1,7 @@
 """Contains the Met OfficeAPI class and its methods."""
 
 import logging
+from datetime import datetime
 
 import requests
 import ujson
@@ -96,7 +97,7 @@ class MetofficeClient:
         """
         self.logger.info("Getting the daily forecast")
         return self._call_api(api=APIList.Daily)
-    
+
     def get_time_series(self, api_response) -> list:
         """Extracts the time series data from the given API response.
         Args:
@@ -112,8 +113,37 @@ class MetofficeClient:
             api_response (object): The response object from the API containing weather data.
         Returns:
             str: The location name for the weather data.
-        """        
+        """
         return api_response.features[0].properties.location.name
+
+    def get_model_run_date(self, api_response) -> datetime:
+        """Extracts the run date from the given API response.
+        Args:
+            api_response (object): The response object from the API containing weather data.
+        Returns:
+            datetime: The rundate for the weather data.
+        """
+        return api_response.features[0].properties.modelRunDate
+
+    def get_parameter_description(self, api_response, parameter) -> str:
+        """Extracts the description for the given parameter from the given API response.
+        Args:
+            api_response (object): The response object from the API containing weather data.
+            parameter (str): The parameter for which the description is required.
+        Returns:
+            str: The description for the given parameter.
+        """
+        return getattr(api_response.parameters[0], parameter).description
+
+    def get_parameter_unit(self, api_response, parameter) -> str:
+        """Extracts the unit for the given parameter from the given API response.
+        Args:
+            api_response (object): The response object from the API containing weather data.
+            parameter (str): The parameter for which the unit is required.
+        Returns:
+            str: The unit for the given parameter.
+        """
+        return getattr(api_response.parameters[0], parameter).unit.symbol.type
 
     def _call_api(self, api: Endpoint = APIList.Daily) -> object:
         """Initialise the arguments required to call one of the REST APIs and then call it returning the results."""
@@ -139,5 +169,7 @@ class MetofficeClient:
             raise err
         self.logger.debug(
             f"Formatted API results:\n {ujson.dumps(results.json(), indent=2)}"
-        ) 
-        return api.value.response.parse_kwargs(self, api.value.response, **results.json())
+        )
+        return api.value.response.parse_kwargs(
+            self, api.value.response, **results.json()
+        )
