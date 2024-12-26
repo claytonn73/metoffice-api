@@ -5,7 +5,15 @@ import logging
 import requests
 import ujson
 
-from metoffice.const import APIList, Endpoint, Metoffice, apiparms
+from metoffice.const import (
+    APIList,
+    DFeatureCollection,
+    Endpoint,
+    HFeatureCollection,
+    Metoffice,
+    TFeatureCollection,
+    apiparms
+)
 
 # Only export the Met OfficeClient
 __all__ = ["MetofficeClient"]
@@ -19,7 +27,7 @@ class MetofficeError(Exception):
 class MetofficeClient:
     """Class for the Met Office API."""
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str) -> None:
         """Initialise the API client."""
         # Create a logger instance for messages from the API client
         self.logger = logging.getLogger(__name__)
@@ -27,7 +35,6 @@ class MetofficeClient:
         self._session = requests.Session()
         self._api_key = api_key
         self._api = Metoffice
-        self._api_args = {}
         self._api_parms = apiparms()
 
     def __enter__(self):
@@ -42,39 +49,74 @@ class MetofficeClient:
         """Close the requests session."""
         self._session.close()
 
-    def set_latitude(self, latitude):
-        """Set the period to an integer number of hours."""
-        if isinstance(latitude, float):
+    def set_latitude(self, latitude) -> None:
+        """Set the latitude for the API parameters.
+        Args:
+            latitude (float): The latitude value to set. Must be a float between -85 and 85.
+        Raises:
+            MetofficeError: If the latitude is not a float or is not within the range -85 to 85.
+        """
+        if isinstance(latitude, float) and (-85 <= latitude <= 85):
             self._api.parameters.latitude = latitude
         else:
-            raise MetofficeError("Latitude must be a float.")
+            raise MetofficeError("Latitude must be a number between -85 and +85.")
 
-    def set_longitude(self, longitude):
-        """Set the period to an integer number of hours."""
-        if isinstance(longitude, float):
+    def set_longitude(self, longitude) -> None:
+        """Set the longitude for the API parameters.
+        Args:
+            longitude (float): The longitude value to set. Must be a float between -180 and 180.
+        Raises:
+            MetofficeError: If the longitude is not a float or is not within the range -180 to 180.
+        """
+        if isinstance(longitude, float) and (-180 <= longitude <= 180):
             self._api.parameters.longitude = longitude
         else:
-            raise MetofficeError("Longitude must be a float.")
+            raise MetofficeError("Longitude must be a number between -180 and +180.")
 
-    def get_hourly(self):
-        """Get the hourly forecast."""
+    def get_hourly(self) -> HFeatureCollection:
+        """Fetches the hourly weather forecast data by making an API call to the specified endpoint.
+        Returns:
+            HFeatureCollection: A dataclass with the hourly forecast response
+        """
         self.logger.info("Getting the hourly forecast")
         return self._call_api(api=APIList.Hourly)
 
-    def get_three_hourly(self):
-        """Get the three hourly forecast."""
+    def get_three_hourly(self) -> TFeatureCollection:
+        """Fetches the three hourly weather forecast data by making an API call to the specified endpoint.
+        Returns:
+            TFeatureCollection: A dataclass with the three hourly forecast response
+        """
         self.logger.info("Getting the three hourly forecast")
         return self._call_api(api=APIList.ThreeHourly)
 
-    def get_daily(self):
-        """Get the daily forecast."""
+    def get_daily(self) -> DFeatureCollection:
+        """Fetches the daily weather forecast data by making an API call to the specified endpoint.
+        Returns:
+            DFeatureCollection: A dataclass with the daily forecast response.
+        """
         self.logger.info("Getting the daily forecast")
         return self._call_api(api=APIList.Daily)
+    
+    def get_time_series(self, api_response) -> list:
+        """Extracts the time series data from the given API response.
+        Args:
+            api_response (object): The response object from the API containing weather data.
+        Returns:
+            list: A list of time series data extracted from the API response.
+        """
+        return api_response.features[0].properties.timeSeries
 
-    def _call_api(self, api: Endpoint = APIList.Daily, sample=False) -> object:
+    def get_location(self, api_response) -> str:
+        """Extracts the location name from the given API response.
+        Args:
+            api_response (object): The response object from the API containing weather data.
+        Returns:
+            str: The location name for the weather data.
+        """        
+        return api_response.features[0].properties.location.name
+
+    def _call_api(self, api: Endpoint = APIList.Daily) -> object:
         """Initialise the arguments required to call one of the REST APIs and then call it returning the results."""
-        if sample:
-            self.logger.info(f"Processing sample json for: {api.name}")
         self.logger.info(f"Calling API endpoint: {api.name}")
         # Create a dictionary entry for the header required by the endpoint
         header = {"accept": "application/json", "apikey": self._api_key}
@@ -97,5 +139,5 @@ class MetofficeClient:
             raise err
         self.logger.debug(
             f"Formatted API results:\n {ujson.dumps(results.json(), indent=2)}"
-        )
-        return api.value.response(**results.json())
+        ) 
+        return api.value.response.parse_kwargs(self, api.value.response, **results.json())

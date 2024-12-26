@@ -1,4 +1,6 @@
-"""Constant definitions which describe the Met Office Site Specific API."""
+"""Cconstants, data structures, and configuration for interacting with the Met Office Site
+Specific Weather API. It provides a comprehensive set of data classes and enums to represent
+weather-related information and API endpoints.."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,7 +13,31 @@ from metoffice.apiconstruct import Endpoint, RESTClient, baseclass
 __all__ = ["Metoffice"]
 
 
+class APIParms(Enum):
+    """An enum representing the parameters for the Met Office API."""
+
+    DATASOURCE = "dataSource"
+    EXCLUDEPARAMETERMETADATA = "excludeParameterMetadata"
+    INCLUDELOCATIONNAME = "includeLocationName"
+    LATITUDE = "latitude"
+    LONGITUDE = "longitude"
+
+
+@dataclass
+class apiparms:
+    """Dataclass to hold the parameters for the Met Office API.
+    Parameter defaults are set so only changed parameters need to be set."""
+
+    latitude: float = 0
+    longitude: float = 0
+    dataSource: str = "BD1"
+    excludeParameterMetadata: bool = False
+    includeLocationName: bool = True
+
+
 class WeatherCode(Enum):
+    """An enum representing various weather conditions (e.g., sunny, cloudy, rainy)"""
+
     NA = "Not available"
     TRACE_RAIN = -1  # Trace rain
     CLEAR_NIGHT = 0  # Clear night
@@ -47,23 +73,6 @@ class WeatherCode(Enum):
     THUNDER = 30  # Thunder
 
 
-class APIParms(Enum):
-    DATASOURCE = "dataSource"
-    EXCLUDEPARAMETERMETADATA = "excludeParameterMetadata"
-    INCLUDELOCATIONNAME = "includeLocationName"
-    LATITUDE = "latitude"
-    LONGITUDE = "longitude"
-
-
-@dataclass
-class apiparms:
-    latitude: float = 0
-    longitude: float = 0
-    dataSource: str = "BD1"
-    excludeParameterMetadata: bool = False
-    includeLocationName: bool = True
-
-
 @dataclass
 class Symbol(baseclass):
     value: str
@@ -84,28 +93,14 @@ class Parameter(baseclass):
 
 
 @dataclass
-class TParameters(baseclass):
-    totalSnowAmount: Parameter
-    visibility: Parameter
-    probOfHail: Parameter
-    windDirectionFrom10m: Parameter
-    probOfHeavyRain: Parameter
-    maxScreenAirTemp: Parameter
-    feelsLikeTemp: Parameter
-    probOfSferics: Parameter
-    screenRelativeHumidity: Parameter
-    windSpeed10m: Parameter
-    probOfPrecipitation: Parameter
-    probOfRain: Parameter
-    max10mWindGust: Parameter
-    significantWeatherCode: Parameter
-    probOfHeavySnow: Parameter
-    minScreenAirTemp: Parameter
-    totalPrecipAmount: Parameter
-    mslp: Parameter
-    windGustSpeed10m: Parameter
-    uvIndex: Parameter
-    probOfSnow: Parameter
+class Location(baseclass):
+    name: str
+
+
+@dataclass
+class Geometry(baseclass):
+    type: str
+    coordinates: List[float]
 
 
 @dataclass
@@ -128,6 +123,65 @@ class HParameters(baseclass):
     totalPrecipAmount: Parameter
     totalSnowAmount: Parameter
     max10mWindGust: Parameter
+
+
+@dataclass
+class HTimeSeries(baseclass):
+    time: datetime
+    screenTemperature: float
+    screenDewPointTemperature: float
+    feelsLikeTemperature: float
+    windSpeed10m: float
+    windDirectionFrom10m: int
+    windGustSpeed10m: float
+    visibility: int
+    screenRelativeHumidity: float
+    mslp: int
+    uvIndex: int
+    significantWeatherCode: WeatherCode
+    precipitationRate: float
+    probOfPrecipitation: int
+    maxScreenAirTemp: float = 0
+    minScreenAirTemp: float = 0
+    totalPrecipAmount: float = 0
+    totalSnowAmount: float = 0
+    max10mWindGust: float = 0
+
+
+@dataclass
+class HProperties(baseclass):
+    location: Location
+    requestPointDistance: float
+    modelRunDate: str
+    timeSeries: List[HTimeSeries]
+
+
+@dataclass
+class HFeature(baseclass):
+    type: str
+    geometry: Geometry
+    properties: HProperties
+
+
+@dataclass
+class HFeatureCollection(baseclass):
+    type: str
+    features: List[HFeature]
+    parameters: List[HParameters] = None
+
+
+Hourly = Endpoint(
+    endpoint="sitespecific/v0/point/hourly",
+    name="Hourly Forecast",
+    parms=[
+        APIParms.DATASOURCE,
+        APIParms.EXCLUDEPARAMETERMETADATA,
+        APIParms.INCLUDELOCATIONNAME,
+        APIParms.LATITUDE,
+        APIParms.LONGITUDE,
+    ],
+    response=HFeatureCollection,
+)
 
 
 @dataclass
@@ -158,7 +212,6 @@ class DParameters(baseclass):
     dayLowerBoundMaxFeelsLikeTemp: Parameter
     nightLowerBoundMinFeelsLikeTemp: Parameter
     dayMaxFeelsLikeTemp: Parameter
-    daySignificantWeatherCode: Parameter
     maxUvIndex: Parameter
     dayProbabilityOfPrecipitation: Parameter
     nightProbabilityOfPrecipitation: Parameter
@@ -177,26 +230,110 @@ class DParameters(baseclass):
 
 
 @dataclass
-class HTimeSeries(baseclass):
+class DTimeSeries(baseclass):
     time: datetime
-    screenTemperature: float
-    screenDewPointTemperature: float
-    feelsLikeTemperature: float
-    windSpeed10m: float
-    windDirectionFrom10m: int
-    windGustSpeed10m: float
-    visibility: int
-    screenRelativeHumidity: float
-    mslp: int
-    uvIndex: int
-    significantWeatherCode: WeatherCode
-    precipitationRate: float
-    probOfPrecipitation: int
-    maxScreenAirTemp: float = 0
-    minScreenAirTemp: float = 0
-    totalPrecipAmount: float = 0
-    totalSnowAmount: float = 0
-    max10mWindGust: float = 0
+    midday10MWindSpeed: float = 0
+    midnight10MWindSpeed: float = 0
+    midday10MWindDirection: int = 0
+    midnight10MWindDirection: int = 0
+    midday10MWindGust: float = 0
+    midnight10MWindGust: float = 0
+    middayVisibility: int = 0
+    midnightVisibility: int = 0
+    middayRelativeHumidity: float = 0
+    midnightRelativeHumidity: float = 0
+    middayMslp: int = 0
+    midnightMslp: int = 0
+    nightSignificantWeatherCode: WeatherCode = WeatherCode.NA
+    dayMaxScreenTemperature: float = 0
+    nightMinScreenTemperature: float = 0
+    dayUpperBoundMaxTemp: float = 0
+    nightUpperBoundMinTemp: float = 0
+    dayLowerBoundMaxTemp: float = 0
+    nightLowerBoundMinTemp: float = 0
+    nightMinFeelsLikeTemp: float = 0
+    dayUpperBoundMaxFeelsLikeTemp: float = 0
+    nightUpperBoundMinFeelsLikeTemp: float = 0
+    dayLowerBoundMaxFeelsLikeTemp: float = 0
+    nightLowerBoundMinFeelsLikeTemp: float = 0
+    daySignificantWeatherCode: WeatherCode = WeatherCode.NA
+    dayMaxFeelsLikeTemp: float = 0
+    maxUvIndex: int = 0
+    dayProbabilityOfPrecipitation: int = 0
+    nightProbabilityOfPrecipitation: int = 0
+    dayProbabilityOfSnow: int = 0
+    nightProbabilityOfSnow: int = 0
+    dayProbabilityOfHeavySnow: int = 0
+    nightProbabilityOfHeavySnow: int = 0
+    dayProbabilityOfRain: int = 0
+    nightProbabilityOfRain: int = 0
+    dayProbabilityOfHeavyRain: int = 0
+    nightProbabilityOfHeavyRain: int = 0
+    dayProbabilityOfHail: int = 0
+    nightProbabilityOfHail: int = 0
+    dayProbabilityOfSferics: int = 0
+    nightProbabilityOfSferics: int = 0
+
+
+@dataclass
+class DProperties(baseclass):
+    location: Location
+    requestPointDistance: float
+    modelRunDate: str
+    timeSeries: List[DTimeSeries]
+
+
+@dataclass
+class DFeature(baseclass):
+    type: str
+    geometry: Geometry
+    properties: DProperties
+
+
+@dataclass
+class DFeatureCollection(baseclass):
+    type: str
+    features: List[DFeature]
+    parameters: List[DParameters] = None
+
+
+Daily = Endpoint(
+    endpoint="sitespecific/v0/point/daily",
+    name="Daily Forecast",
+    parms=[
+        APIParms.DATASOURCE,
+        APIParms.EXCLUDEPARAMETERMETADATA,
+        APIParms.INCLUDELOCATIONNAME,
+        APIParms.LATITUDE,
+        APIParms.LONGITUDE,
+    ],
+    response=DFeatureCollection,
+)
+
+
+@dataclass
+class TParameters(baseclass):
+    totalSnowAmount: Parameter
+    visibility: Parameter
+    probOfHail: Parameter
+    windDirectionFrom10m: Parameter
+    probOfHeavyRain: Parameter
+    maxScreenAirTemp: Parameter
+    feelsLikeTemp: Parameter
+    probOfSferics: Parameter
+    screenRelativeHumidity: Parameter
+    windSpeed10m: Parameter
+    probOfPrecipitation: Parameter
+    probOfRain: Parameter
+    max10mWindGust: Parameter
+    significantWeatherCode: Parameter
+    probOfHeavySnow: Parameter
+    minScreenAirTemp: Parameter
+    totalPrecipAmount: Parameter
+    mslp: Parameter
+    windGustSpeed10m: Parameter
+    uvIndex: Parameter
+    probOfSnow: Parameter
 
 
 @dataclass
@@ -226,112 +363,11 @@ class TTimeSeries(baseclass):
 
 
 @dataclass
-class DTimeSeries(baseclass):
-    time: datetime
-    midday10MWindSpeed: float
-    midnight10MWindSpeed: float
-    midday10MWindDirection: int
-    midnight10MWindDirection: int
-    midday10MWindGust: float
-    midnight10MWindGust: float
-    middayVisibility: int
-    midnightVisibility: int
-    middayRelativeHumidity: float
-    midnightRelativeHumidity: float
-    middayMslp: int
-    midnightMslp: int
-    nightSignificantWeatherCode: WeatherCode
-    dayMaxScreenTemperature: float
-    nightMinScreenTemperature: float
-    dayUpperBoundMaxTemp: float
-    nightUpperBoundMinTemp: float
-    dayLowerBoundMaxTemp: float
-    nightLowerBoundMinTemp: float
-    nightMinFeelsLikeTemp: float
-    dayUpperBoundMaxFeelsLikeTemp: float
-    nightUpperBoundMinFeelsLikeTemp: float
-    dayLowerBoundMaxFeelsLikeTemp: float
-    nightLowerBoundMinFeelsLikeTemp: float
-    daySignificantWeatherCode: WeatherCode = WeatherCode.NA
-    dayMaxFeelsLikeTemp: float = 0
-    maxUvIndex: int = 0
-    dayProbabilityOfPrecipitation: int = 0
-    nightProbabilityOfPrecipitation: int = 0
-    dayProbabilityOfSnow: int = 0
-    nightProbabilityOfSnow: int = 0
-    dayProbabilityOfHeavySnow: int = 0
-    nightProbabilityOfHeavySnow: int = 0
-    dayProbabilityOfRain: int = 0
-    nightProbabilityOfRain: int = 0
-    dayProbabilityOfHeavyRain: int = 0
-    nightProbabilityOfHeavyRain: int = 0
-    dayProbabilityOfHail: int = 0
-    nightProbabilityOfHail: int = 0
-    dayProbabilityOfSferics: int = 0
-    nightProbabilityOfSferics: int = 0
-
-
-@dataclass
-class Location(baseclass):
-    name: str
-
-
-@dataclass
-class HProperties(baseclass):
-    location: Location
-    requestPointDistance: float
-    modelRunDate: str
-    timeSeries: List[HTimeSeries]
-
-
-@dataclass
-class DProperties(baseclass):
-    location: Location
-    requestPointDistance: float
-    modelRunDate: str
-    timeSeries: List[DTimeSeries]
-
-
-@dataclass
 class TProperties(baseclass):
     location: Location
     requestPointDistance: float
     modelRunDate: str
     timeSeries: List[TTimeSeries]
-
-
-@dataclass
-class Geometry(baseclass):
-    type: str
-    coordinates: List[float]
-
-
-@dataclass
-class DFeature(baseclass):
-    type: str
-    geometry: Geometry
-    properties: DProperties
-
-
-@dataclass
-class DFeatureCollection(baseclass):
-    type: str
-    features: List[DFeature]
-    parameters: List[DParameters] = None
-
-
-@dataclass
-class HFeature(baseclass):
-    type: str
-    geometry: Geometry
-    properties: HProperties
-
-
-@dataclass
-class HFeatureCollection(baseclass):
-    type: str
-    features: List[HFeature]
-    parameters: List[HParameters] = None
 
 
 @dataclass
@@ -361,33 +397,6 @@ ThreeHourly = Endpoint(
     response=TFeatureCollection,
 )
 
-Hourly = Endpoint(
-    endpoint="sitespecific/v0/point/hourly",
-    name="Hourly Forecast",
-    parms=[
-        APIParms.DATASOURCE,
-        APIParms.EXCLUDEPARAMETERMETADATA,
-        APIParms.INCLUDELOCATIONNAME,
-        APIParms.LATITUDE,
-        APIParms.LONGITUDE,
-    ],
-    response=HFeatureCollection,
-)
-
-
-Daily = Endpoint(
-    endpoint="sitespecific/v0/point/daily",
-    name="Daily Forecast",
-    parms=[
-        APIParms.DATASOURCE,
-        APIParms.EXCLUDEPARAMETERMETADATA,
-        APIParms.INCLUDELOCATIONNAME,
-        APIParms.LATITUDE,
-        APIParms.LONGITUDE,
-    ],
-    response=DFeatureCollection,
-)
-
 
 class ConstantList(Enum):
     """This enum lists all the defined constants, making it easy to reference them.
@@ -407,10 +416,9 @@ class APIList(Enum):
     ThreeHourly = ThreeHourly
 
 
-# This instance of RESTClient describes the SolarEdge API
+# This instance of RESTClient describes the Metoffice API
 Metoffice = RESTClient(
     url="https://data.hub.api.metoffice.gov.uk",
-    auth=None,
     apilist=APIList,
     parameters=apiparms(),
     constants=ConstantList,
