@@ -50,25 +50,18 @@ class MetofficeClient:
         """Close the requests session."""
         self._session.close()
 
-    def set_latitude(self, latitude) -> None:
-        """Set the latitude for the API parameters.
+    def set_coordinates(self, latitude, longitude) -> None:
+        """Set the coordinates for the API parameters.
         Args:
             latitude (float): The latitude value to set. Must be a float between -85 and 85.
+            longitude (float): The longitude value to set. Must be a float between -180 and 180.            
         Raises:
-            MetofficeError: If the latitude is not a float or is not within the range -85 to 85.
+            MetofficeError: If the latitude or longitude are not a float or is not within the range allowed.
         """
         if isinstance(latitude, float) and (-85 <= latitude <= 85):
             self._api.parameters.latitude = latitude
         else:
             raise MetofficeError("Latitude must be a number between -85 and +85.")
-
-    def set_longitude(self, longitude) -> None:
-        """Set the longitude for the API parameters.
-        Args:
-            longitude (float): The longitude value to set. Must be a float between -180 and 180.
-        Raises:
-            MetofficeError: If the longitude is not a float or is not within the range -180 to 180.
-        """
         if isinstance(longitude, float) and (-180 <= longitude <= 180):
             self._api.parameters.longitude = longitude
         else:
