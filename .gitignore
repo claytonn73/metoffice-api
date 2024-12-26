@@ -1,0 +1,9 @@
+metoffice/__pycache__/*
+__pycache__/utilities.cpython-311.pyc
+three_hourly..json
+hourly.json
+daily.json
+daily.txt
+log_daily.py
+test.py
+utilities.py
