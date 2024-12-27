@@ -1,10 +1,11 @@
-#Met Office API
+# Met Office API
 
-Overview
+**Overview**
 The provides a client for interacting with the Met Office Weather API, providing a convenient interface for retrieving weather forecasts at different time intervals. The MetofficeClient class encapsulates the API interaction logic, handling authentication, request construction, and response parsing.
 
-**Key Components**
-MetofficeClient Class
+## Key Components
+
+**MetofficeClient Class**
 Manages API interactions with the Met Office weather service
 
 Requires setting geographic coordinates (latitude/longitude)
@@ -25,7 +26,7 @@ Provides helper functions to retrive specific data from the forecast response:
 - get_parameter_description(response, parameter): The description of a particular parameter in the timeseries
 - get_parameter_unit(response, parameter): The unit of a particular parameter in the timeseries  
 
-A sample invocation of the Metoffice API functionality is shown below 
+A sample invocation of the Metoffice API functionality is shown below
 
 ```python
 #!/usr/bin/env python3

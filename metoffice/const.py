@@ -1,6 +1,6 @@
-"""Cconstants, data structures, and configuration for interacting with the Met Office Site
+"""Constants, data structures, and configuration for interacting with the Met Office Site
 Specific Weather API. It provides a comprehensive set of data classes and enums to represent
-weather-related information and API endpoints.."""
+weather-related information and API endpoints."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -23,13 +23,13 @@ class APIParms(Enum):
     LONGITUDE = "longitude"
 
 
-@dataclass
+@dataclass(slots=True)
 class apiparms:
     """Dataclass to hold the parameters for the Met Office API.
     Parameter defaults are set so only changed parameters need to be set."""
 
-    latitude: float = 0
-    longitude: float = 0
+    latitude: float = None
+    longitude: float = None
     dataSource: str = "BD1"
     excludeParameterMetadata: bool = False
     includeLocationName: bool = True
@@ -38,9 +38,9 @@ class apiparms:
 class WeatherCode(Enum):
     """An enum representing various weather conditions (e.g., sunny, cloudy, rainy)"""
 
-    NA = "Not available"
+    NOT_AVAILABLE = "NA"  # Not available
     TRACE_RAIN = -1  # Trace rain
-    CLEAR_NIGHT = 0  # Clear night
+    CLEAR_NIGHT = 0 # Clear night
     SUNNY_DAY = 1  # Sunny day
     PARTLY_CLOUDY_NIGHT = 2  # Partly cloudy (night)
     PARTLY_CLOUDY_DAY = 3  # Partly cloudy (day)
@@ -73,37 +73,37 @@ class WeatherCode(Enum):
     THUNDER = 30  # Thunder
 
 
-@dataclass
+@dataclass(slots=True)
 class Symbol(baseclass):
     value: str
     type: str
 
 
-@dataclass
+@dataclass(slots=True)
 class Unit(baseclass):
     label: str
     symbol: Symbol
 
 
-@dataclass
+@dataclass(slots=True)
 class Parameter(baseclass):
     type: str
     description: str
     unit: Unit
 
 
-@dataclass
+@dataclass(slots=True)
 class Location(baseclass):
     name: str
 
 
-@dataclass
+@dataclass(slots=True)
 class Geometry(baseclass):
     type: str
     coordinates: List[float]
 
 
-@dataclass
+@dataclass(slots=True)
 class HParameters(baseclass):
     screenTemperature: Parameter
     screenDewPointTemperature: Parameter
@@ -125,7 +125,7 @@ class HParameters(baseclass):
     max10mWindGust: Parameter
 
 
-@dataclass
+@dataclass(slots=True)
 class HTimeSeries(baseclass):
     time: datetime
     screenTemperature: float
@@ -141,14 +141,14 @@ class HTimeSeries(baseclass):
     significantWeatherCode: WeatherCode
     precipitationRate: float
     probOfPrecipitation: int
-    maxScreenAirTemp: float = 0
-    minScreenAirTemp: float = 0
-    totalPrecipAmount: float = 0
-    totalSnowAmount: float = 0
-    max10mWindGust: float = 0
+    maxScreenAirTemp: float = None
+    minScreenAirTemp: float = None
+    totalPrecipAmount: float = None
+    totalSnowAmount: float = None
+    max10mWindGust: float = None
 
 
-@dataclass
+@dataclass(slots=True)
 class HProperties(baseclass):
     location: Location
     requestPointDistance: float
@@ -156,14 +156,14 @@ class HProperties(baseclass):
     timeSeries: List[HTimeSeries]
 
 
-@dataclass
+@dataclass(slots=True)
 class HFeature(baseclass):
     type: str
     geometry: Geometry
     properties: HProperties
 
 
-@dataclass
+@dataclass(slots=True)
 class HFeatureCollection(baseclass):
     type: str
     features: List[HFeature]
@@ -184,7 +184,7 @@ Hourly = Endpoint(
 )
 
 
-@dataclass
+@dataclass(slots=True)
 class DParameters(baseclass):
     midday10MWindSpeed: Parameter
     midnight10MWindSpeed: Parameter
@@ -229,53 +229,53 @@ class DParameters(baseclass):
     nightProbabilityOfSferics: Parameter
 
 
-@dataclass
+@dataclass(slots=True)
 class DTimeSeries(baseclass):
     time: datetime
-    midday10MWindSpeed: float = 0
-    midnight10MWindSpeed: float = 0
-    midday10MWindDirection: int = 0
-    midnight10MWindDirection: int = 0
-    midday10MWindGust: float = 0
-    midnight10MWindGust: float = 0
-    middayVisibility: int = 0
-    midnightVisibility: int = 0
-    middayRelativeHumidity: float = 0
-    midnightRelativeHumidity: float = 0
-    middayMslp: int = 0
-    midnightMslp: int = 0
-    nightSignificantWeatherCode: WeatherCode = WeatherCode.NA
-    dayMaxScreenTemperature: float = 0
-    nightMinScreenTemperature: float = 0
-    dayUpperBoundMaxTemp: float = 0
-    nightUpperBoundMinTemp: float = 0
-    dayLowerBoundMaxTemp: float = 0
-    nightLowerBoundMinTemp: float = 0
-    nightMinFeelsLikeTemp: float = 0
-    dayUpperBoundMaxFeelsLikeTemp: float = 0
-    nightUpperBoundMinFeelsLikeTemp: float = 0
-    dayLowerBoundMaxFeelsLikeTemp: float = 0
-    nightLowerBoundMinFeelsLikeTemp: float = 0
-    daySignificantWeatherCode: WeatherCode = WeatherCode.NA
-    dayMaxFeelsLikeTemp: float = 0
-    maxUvIndex: int = 0
-    dayProbabilityOfPrecipitation: int = 0
-    nightProbabilityOfPrecipitation: int = 0
-    dayProbabilityOfSnow: int = 0
-    nightProbabilityOfSnow: int = 0
-    dayProbabilityOfHeavySnow: int = 0
-    nightProbabilityOfHeavySnow: int = 0
-    dayProbabilityOfRain: int = 0
-    nightProbabilityOfRain: int = 0
-    dayProbabilityOfHeavyRain: int = 0
-    nightProbabilityOfHeavyRain: int = 0
-    dayProbabilityOfHail: int = 0
-    nightProbabilityOfHail: int = 0
-    dayProbabilityOfSferics: int = 0
-    nightProbabilityOfSferics: int = 0
+    midday10MWindSpeed: float = None
+    midnight10MWindSpeed: float = None
+    midday10MWindDirection: int = None
+    midnight10MWindDirection: int = None
+    midday10MWindGust: float = None
+    midnight10MWindGust: float = None
+    middayVisibility: int = None
+    midnightVisibility: int = None
+    middayRelativeHumidity: float = None
+    midnightRelativeHumidity: float = None
+    middayMslp: int = None
+    midnightMslp: int = None
+    nightSignificantWeatherCode: WeatherCode = WeatherCode.NOT_AVAILABLE
+    dayMaxScreenTemperature: float = None
+    nightMinScreenTemperature: float = None
+    dayUpperBoundMaxTemp: float = None
+    nightUpperBoundMinTemp: float = None
+    dayLowerBoundMaxTemp: float = None
+    nightLowerBoundMinTemp: float = None
+    nightMinFeelsLikeTemp: float = None
+    dayUpperBoundMaxFeelsLikeTemp: float = None
+    nightUpperBoundMinFeelsLikeTemp: float = None
+    dayLowerBoundMaxFeelsLikeTemp: float = None
+    nightLowerBoundMinFeelsLikeTemp: float = None
+    daySignificantWeatherCode: WeatherCode = WeatherCode.NOT_AVAILABLE
+    dayMaxFeelsLikeTemp: float = None
+    maxUvIndex: int = None
+    dayProbabilityOfPrecipitation: int = None
+    nightProbabilityOfPrecipitation: int = None
+    dayProbabilityOfSnow: int = None
+    nightProbabilityOfSnow: int = None
+    dayProbabilityOfHeavySnow: int = None
+    nightProbabilityOfHeavySnow: int = None
+    dayProbabilityOfRain: int = None
+    nightProbabilityOfRain: int = None
+    dayProbabilityOfHeavyRain: int = None
+    nightProbabilityOfHeavyRain: int = None
+    dayProbabilityOfHail: int = None
+    nightProbabilityOfHail: int = None
+    dayProbabilityOfSferics: int = None
+    nightProbabilityOfSferics: int = None
 
 
-@dataclass
+@dataclass(slots=True)
 class DProperties(baseclass):
     location: Location
     requestPointDistance: float
@@ -283,14 +283,14 @@ class DProperties(baseclass):
     timeSeries: List[DTimeSeries]
 
 
-@dataclass
+@dataclass(slots=True)
 class DFeature(baseclass):
     type: str
     geometry: Geometry
     properties: DProperties
 
 
-@dataclass
+@dataclass(slots=True)
 class DFeatureCollection(baseclass):
     type: str
     features: List[DFeature]
@@ -311,7 +311,7 @@ Daily = Endpoint(
 )
 
 
-@dataclass
+@dataclass(slots=True)
 class TParameters(baseclass):
     totalSnowAmount: Parameter
     visibility: Parameter
@@ -336,7 +336,7 @@ class TParameters(baseclass):
     probOfSnow: Parameter
 
 
-@dataclass
+@dataclass(slots=True)
 class TTimeSeries(baseclass):
     time: datetime
     maxScreenAirTemp: float
@@ -362,7 +362,7 @@ class TTimeSeries(baseclass):
     probOfSferics: int
 
 
-@dataclass
+@dataclass(slots=True)
 class TProperties(baseclass):
     location: Location
     requestPointDistance: float
@@ -370,15 +370,28 @@ class TProperties(baseclass):
     timeSeries: List[TTimeSeries]
 
 
-@dataclass
+@dataclass(slots=True)
 class TFeature(baseclass):
+    """Represents a geographical feature with a specific type, geometry, and properties.
+
+    Attributes:
+        type (str): A label for the response.
+        geometry (Geometry): The coordinates for the forecast.
+        properties (TProperties): Additional properties for the forecast.
+    """
     type: str
     geometry: Geometry
     properties: TProperties
 
 
-@dataclass
+@dataclass(slots=True)
 class TFeatureCollection(baseclass):
+    """This class represents the response from the Met Office API for the three-hourly forecast.
+    Attributes:
+        type (str): A label for the response.
+        features (List[TFeature]): A list of features included in the forecast.
+        parameters (List[TParameters], optional): A list of parameters associated with the features if requested.
+    """
     type: str
     features: List[TFeature]
     parameters: List[TParameters] = None
@@ -404,6 +417,7 @@ class ConstantList(Enum):
     """
 
     WeatherCode = WeatherCode
+    Endpoint = Endpoint
 
 
 class APIList(Enum):
