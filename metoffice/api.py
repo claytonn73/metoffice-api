@@ -68,7 +68,7 @@ class MetofficeClient:
         if (hasattr(data,"type")):
             time_since_model = datetime.now().astimezone() - data.features[0].properties.modelRunDate
             if (time_since_model < timedelta(hours=6)):
-                self.logger.info(f"Recent {forecast.value} forecast exists - using this data")                
+                self.logger.info(f"Recent {forecast.value} forecast exists from {time_since_model} ago - using this data")                
                 return
         self._get_forecast(forecast)
             
