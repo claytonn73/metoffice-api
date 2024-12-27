@@ -57,7 +57,7 @@ class baseclass:
                             entry_type.__args__[0], **(entry_value[index])
                         )
                 # If the type of the list entry is an Enum then convert it to an Enum entry
-                if issubclass(entry_type.__args__[0], Enum):
+                elif issubclass(entry_type.__args__[0], Enum):
                     try:
                         entry_value[index] = entry_type.__args__[0][data]
                     except KeyError:
