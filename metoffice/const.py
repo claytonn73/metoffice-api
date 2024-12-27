@@ -40,7 +40,7 @@ class WeatherCode(Enum):
 
     NOT_AVAILABLE = "NA"  # Not available
     TRACE_RAIN = -1  # Trace rain
-    CLEAR_NIGHT = 0 # Clear night
+    CLEAR_NIGHT = 0  # Clear night
     SUNNY_DAY = 1  # Sunny day
     PARTLY_CLOUDY_NIGHT = 2  # Partly cloudy (night)
     PARTLY_CLOUDY_DAY = 3  # Partly cloudy (day)
@@ -104,7 +104,11 @@ class Geometry(baseclass):
 
 
 @dataclass(slots=True)
-class HParameters(baseclass):
+class HourlyParameters(baseclass):
+    """This dataclass is a list of descriptions of the hourly forecast variables.
+    It can be used to get descrption and metrics for each parameter
+    """
+
     screenTemperature: Parameter
     screenDewPointTemperature: Parameter
     feelsLikeTemperature: Parameter
@@ -125,8 +129,34 @@ class HParameters(baseclass):
     max10mWindGust: Parameter
 
 
+class HourlyForecastMetrics(Enum):
+    """Enum representing the fields of the HTimeSeries dataclass."""
+
+    TIME = "time"
+    SCREEN_TEMPERATURE = "screenTemperature"
+    SCREEN_DEW_POINT_TEMPERATURE = "screenDewPointTemperature"
+    FEELS_LIKE_TEMPERATURE = "feelsLikeTemperature"
+    WIND_SPEED_10M = "windSpeed10m"
+    WIND_DIRECTION_FROM_10M = "windDirectionFrom10m"
+    WIND_GUST_SPEED_10M = "windGustSpeed10m"
+    VISIBILITY = "visibility"
+    SCREEN_RELATIVE_HUMIDITY = "screenRelativeHumidity"
+    MSLP = "mslp"
+    UV_INDEX = "uvIndex"
+    SIGNIFICANT_WEATHER_CODE = "significantWeatherCode"
+    PRECIPITATION_RATE = "precipitationRate"
+    PROB_OF_PRECIPITATION = "probOfPrecipitation"
+    MAX_SCREEN_AIR_TEMP = "maxScreenAirTemp"
+    MIN_SCREEN_AIR_TEMP = "minScreenAirTemp"
+    TOTAL_PRECIP_AMOUNT = "totalPrecipAmount"
+    TOTAL_SNOW_AMOUNT = "totalSnowAmount"
+    MAX_10M_WIND_GUST = "max10mWindGust"
+
+
 @dataclass(slots=True)
-class HTimeSeries(baseclass):
+class HourlyTimeSeries(baseclass):
+    """This dataclass represents the hourly forecast information for a specific time."""
+
     time: datetime
     screenTemperature: float
     screenDewPointTemperature: float
@@ -149,25 +179,25 @@ class HTimeSeries(baseclass):
 
 
 @dataclass(slots=True)
-class HProperties(baseclass):
+class HourlyProperties(baseclass):
     location: Location
     requestPointDistance: float
     modelRunDate: str
-    timeSeries: List[HTimeSeries]
+    timeSeries: List[HourlyTimeSeries]
 
 
 @dataclass(slots=True)
-class HFeature(baseclass):
+class HourlyFeatures(baseclass):
     type: str
     geometry: Geometry
-    properties: HProperties
+    properties: HourlyProperties
 
 
 @dataclass(slots=True)
-class HFeatureCollection(baseclass):
+class HourlyResponse(baseclass):
     type: str
-    features: List[HFeature]
-    parameters: List[HParameters] = None
+    features: List[HourlyFeatures]
+    parameters: List[HourlyParameters] = None
 
 
 Hourly = Endpoint(
@@ -180,12 +210,16 @@ Hourly = Endpoint(
         APIParms.LATITUDE,
         APIParms.LONGITUDE,
     ],
-    response=HFeatureCollection,
+    response=HourlyResponse,
 )
 
 
 @dataclass(slots=True)
-class DParameters(baseclass):
+class DailyParameters(baseclass):
+    """This dataclass is a list of descriptions of the daily forecast variables.
+    It can be used to get descrption and metrics for each parameter
+    """
+
     midday10MWindSpeed: Parameter
     midnight10MWindSpeed: Parameter
     midday10MWindDirection: Parameter
@@ -229,8 +263,57 @@ class DParameters(baseclass):
     nightProbabilityOfSferics: Parameter
 
 
+class DailyForecastMetrics(Enum):
+    """Enum representing the fields of the DTimeSeries dataclass."""
+
+    TIME = "time"
+    MIDDAY_10M_WIND_SPEED = "midday10MWindSpeed"
+    MIDNIGHT_10M_WIND_SPEED = "midnight10MWindSpeed"
+    MIDDAY_10M_WIND_DIRECTION = "midday10MWindDirection"
+    MIDNIGHT_10M_WIND_DIRECTION = "midnight10MWindDirection"
+    MIDDAY_10M_WIND_GUST = "midday10MWindGust"
+    MIDNIGHT_10M_WIND_GUST = "midnight10MWindGust"
+    MIDDAY_VISIBILITY = "middayVisibility"
+    MIDNIGHT_VISIBILITY = "midnightVisibility"
+    MIDDAY_RELATIVE_HUMIDITY = "middayRelativeHumidity"
+    MIDNIGHT_RELATIVE_HUMIDITY = "midnightRelativeHumidity"
+    MIDDAY_MSLP = "middayMslp"
+    MIDNIGHT_MSLP = "midnightMslp"
+    NIGHT_SIGNIFICANT_WEATHER_CODE = "nightSignificantWeatherCode"
+    DAY_MAX_SCREEN_TEMPERATURE = "dayMaxScreenTemperature"
+    NIGHT_MIN_SCREEN_TEMPERATURE = "nightMinScreenTemperature"
+    DAY_UPPER_BOUND_MAX_TEMP = "dayUpperBoundMaxTemp"
+    NIGHT_UPPER_BOUND_MIN_TEMP = "nightUpperBoundMinTemp"
+    DAY_LOWER_BOUND_MAX_TEMP = "dayLowerBoundMaxTemp"
+    NIGHT_LOWER_BOUND_MIN_TEMP = "nightLowerBoundMinTemp"
+    NIGHT_MIN_FEELS_LIKE_TEMP = "nightMinFeelsLikeTemp"
+    DAY_UPPER_BOUND_MAX_FEELS_LIKE_TEMP = "dayUpperBoundMaxFeelsLikeTemp"
+    NIGHT_UPPER_BOUND_MIN_FEELS_LIKE_TEMP = "nightUpperBoundMinFeelsLikeTemp"
+    DAY_LOWER_BOUND_MAX_FEELS_LIKE_TEMP = "dayLowerBoundMaxFeelsLikeTemp"
+    NIGHT_LOWER_BOUND_MIN_FEELS_LIKE_TEMP = "nightLowerBoundMinFeelsLikeTemp"
+    DAY_SIGNIFICANT_WEATHER_CODE = "daySignificantWeatherCode"
+    DAY_MAX_FEELS_LIKE_TEMP = "dayMaxFeelsLikeTemp"
+    MAX_UV_INDEX = "maxUvIndex"
+    DAY_PROBABILITY_OF_PRECIPITATION = "dayProbabilityOfPrecipitation"
+    NIGHT_PROBABILITY_OF_PRECIPITATION = "nightProbabilityOfPrecipitation"
+    DAY_PROBABILITY_OF_SNOW = "dayProbabilityOfSnow"
+    NIGHT_PROBABILITY_OF_SNOW = "nightProbabilityOfSnow"
+    DAY_PROBABILITY_OF_HEAVY_SNOW = "dayProbabilityOfHeavySnow"
+    NIGHT_PROBABILITY_OF_HEAVY_SNOW = "nightProbabilityOfHeavySnow"
+    DAY_PROBABILITY_OF_RAIN = "dayProbabilityOfRain"
+    NIGHT_PROBABILITY_OF_RAIN = "nightProbabilityOfRain"
+    DAY_PROBABILITY_OF_HEAVY_RAIN = "dayProbabilityOfHeavyRain"
+    NIGHT_PROBABILITY_OF_HEAVY_RAIN = "nightProbabilityOfHeavyRain"
+    DAY_PROBABILITY_OF_HAIL = "dayProbabilityOfHail"
+    NIGHT_PROBABILITY_OF_HAIL = "nightProbabilityOfHail"
+    DAY_PROBABILITY_OF_SFERICS = "dayProbabilityOfSferics"
+    NIGHT_PROBABILITY_OF_SFERICS = "nightProbabilityOfSferics"
+
+
 @dataclass(slots=True)
-class DTimeSeries(baseclass):
+class DailyTimeSeries(baseclass):
+    """This dataclass represents the daily forecast information for a specific day."""
+
     time: datetime
     midday10MWindSpeed: float = None
     midnight10MWindSpeed: float = None
@@ -276,25 +359,27 @@ class DTimeSeries(baseclass):
 
 
 @dataclass(slots=True)
-class DProperties(baseclass):
+class DailyProperties(baseclass):
     location: Location
     requestPointDistance: float
     modelRunDate: str
-    timeSeries: List[DTimeSeries]
+    timeSeries: List[DailyTimeSeries]
 
 
 @dataclass(slots=True)
-class DFeature(baseclass):
+class DailyFeatures(baseclass):
     type: str
     geometry: Geometry
-    properties: DProperties
+    properties: DailyProperties
 
 
 @dataclass(slots=True)
-class DFeatureCollection(baseclass):
+class DailyResponse(baseclass):
+    """This dataclass is the container for the response for the daily forecast API."""
+
     type: str
-    features: List[DFeature]
-    parameters: List[DParameters] = None
+    features: List[DailyFeatures]
+    parameters: List[DailyParameters] = None
 
 
 Daily = Endpoint(
@@ -307,12 +392,12 @@ Daily = Endpoint(
         APIParms.LATITUDE,
         APIParms.LONGITUDE,
     ],
-    response=DFeatureCollection,
+    response=DailyResponse,
 )
 
 
 @dataclass(slots=True)
-class TParameters(baseclass):
+class ThreeHourParameters(baseclass):
     totalSnowAmount: Parameter
     visibility: Parameter
     probOfHail: Parameter
@@ -336,8 +421,37 @@ class TParameters(baseclass):
     probOfSnow: Parameter
 
 
+class ThreeHourForecastMetrics(Enum):
+    """Enum representing the fields of the ThreeHourTimeSeries dataclass."""
+
+    TIME = "time"
+    MAX_SCREEN_AIR_TEMP = "maxScreenAirTemp"
+    MIN_SCREEN_AIR_TEMP = "minScreenAirTemp"
+    MAX_10M_WIND_GUST = "max10mWindGust"
+    SIGNIFICANT_WEATHER_CODE = "significantWeatherCode"
+    TOTAL_PRECIP_AMOUNT = "totalPrecipAmount"
+    TOTAL_SNOW_AMOUNT = "totalSnowAmount"
+    WIND_SPEED_10M = "windSpeed10m"
+    WIND_DIRECTION_FROM_10M = "windDirectionFrom10m"
+    WIND_GUST_SPEED_10M = "windGustSpeed10m"
+    VISIBILITY = "visibility"
+    MSLP = "mslp"
+    SCREEN_RELATIVE_HUMIDITY = "screenRelativeHumidity"
+    FEELS_LIKE_TEMP = "feelsLikeTemp"
+    UV_INDEX = "uvIndex"
+    PROB_OF_PRECIPITATION = "probOfPrecipitation"
+    PROB_OF_SNOW = "probOfSnow"
+    PROB_OF_HEAVY_SNOW = "probOfHeavySnow"
+    PROB_OF_RAIN = "probOfRain"
+    PROB_OF_HEAVY_RAIN = "probOfHeavyRain"
+    PROB_OF_HAIL = "probOfHail"
+    PROB_OF_SFERICS = "probOfSferics"
+
+
 @dataclass(slots=True)
-class TTimeSeries(baseclass):
+class ThreeHourTimeSeries(baseclass):
+    """This dataclass represents the three hourly information for a specific time."""
+
     time: datetime
     maxScreenAirTemp: float
     minScreenAirTemp: float
@@ -363,38 +477,40 @@ class TTimeSeries(baseclass):
 
 
 @dataclass(slots=True)
-class TProperties(baseclass):
+class ThreeHourProperties(baseclass):
     location: Location
     requestPointDistance: float
     modelRunDate: str
-    timeSeries: List[TTimeSeries]
+    timeSeries: List[ThreeHourTimeSeries]
 
 
 @dataclass(slots=True)
-class TFeature(baseclass):
+class ThreeHourFeatures(baseclass):
     """Represents a geographical feature with a specific type, geometry, and properties.
 
     Attributes:
         type (str): A label for the response.
         geometry (Geometry): The coordinates for the forecast.
-        properties (TProperties): Additional properties for the forecast.
+        properties (ThreeHourProperties): Additional properties for the forecast.
     """
+
     type: str
     geometry: Geometry
-    properties: TProperties
+    properties: ThreeHourProperties
 
 
 @dataclass(slots=True)
-class TFeatureCollection(baseclass):
+class ThreeHourResponse(baseclass):
     """This class represents the response from the Met Office API for the three-hourly forecast.
     Attributes:
         type (str): A label for the response.
-        features (List[TFeature]): A list of features included in the forecast.
-        parameters (List[TParameters], optional): A list of parameters associated with the features if requested.
+        features (List[ThreeHourFeatures]): A list of features included in the forecast.
+        parameters (List[ThreeHourParameters], optional): A list of parameters associated with the features if requested.
     """
+
     type: str
-    features: List[TFeature]
-    parameters: List[TParameters] = None
+    features: List[ThreeHourFeatures]
+    parameters: List[ThreeHourParameters] = None
 
 
 ThreeHourly = Endpoint(
@@ -407,7 +523,7 @@ ThreeHourly = Endpoint(
         APIParms.LATITUDE,
         APIParms.LONGITUDE,
     ],
-    response=TFeatureCollection,
+    response=ThreeHourResponse,
 )
 
 
@@ -418,7 +534,9 @@ class ConstantList(Enum):
 
     WeatherCode = WeatherCode
     Endpoint = Endpoint
-
+    ThreeHourForecastMetrics = ThreeHourForecastMetrics
+    DailyForecastMetrics = DailyForecastMetrics
+    HourlyForecastMetrics = HourlyForecastMetrics
 
 class APIList(Enum):
     """This enum lists all the defined API endpoints, making it easy to reference them.
