@@ -12,19 +12,17 @@ Requires setting geographic coordinates (latitude/longitude)
 
 - set_coordinates(latitude, longitude): sets the coordinates for the API call
 
-Provides methods to retrieve different forecast types:
+Provides methods to retrieve different forecast types and associated information:
 
-- get_hourly(): Hourly forecast
-- get_three_hourly(): Three-hourly forecast
+- get_current_hour_forecast(): The current hours hourly forecast
+- get_current_day_forecast(): The current days daily forecast
 - get_daily(): Daily forecast
-
-Provides helper functions to retrive specific data from the forecast response:
-
-- get_time_series(response): Time Series from the forecast
-- get_location(response): Location name for the forecast
-- get_model_run_date(response): The datetime when the forecast model was run
-- get_parameter_description(response, parameter): The description of a particular parameter in the timeseries
-- get_parameter_unit(response, parameter): The unit of a particular parameter in the timeseries  
+- get_time_series(ForecastType): Time Series from the forecast
+- get_location(ForecastType): Location name for the forecast
+- get_height(ForecastType): Height of the location provided in the forecast
+- get_model_run_date(ForecastType): The datetime when the forecast model was run
+- get_parameter_description(ForecastType, parameter): The description of a particular parameter in the timeseries
+- get_parameter_unit(ForecastType, parameter): The unit of a particular parameter in the timeseries  
 
 A sample invocation of the Metoffice API functionality is shown below
 
@@ -32,14 +30,13 @@ A sample invocation of the Metoffice API functionality is shown below
 #!/usr/bin/env python3
 """Sample Code for the metoffice API."""
 
-from metoffice.api import MetofficeClient
+from metoffice.api import MetofficeClient, ForecastType
 
 def main():
     with MetofficeClient(api_key=env.get("metoffice_api_key")) as client:
         client.set_coordinates(54, -3)
-        hourly = client.get_hourly()
-        print(client.get_time_series(hourly))
-        print(client.get_location(hourly))
+        print(client.get_location())        
+        print(client.get_time_series(ForecastType.DAILY))
 
 if __name__ == "__main__":
     main()

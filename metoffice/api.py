@@ -1,17 +1,12 @@
 """Contains the Met OfficeAPI class and its methods."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+
 import requests
 import ujson
 
-from metoffice.const import (
-    DFeatureCollection,
-    Endpoint,
-    HFeatureCollection,
-    Metoffice,
-    TFeatureCollection,
-)
+from metoffice.const import Metoffice, Endpoint, ForecastType
 
 # Only export the Met OfficeClient
 __all__ = ["MetofficeClient"]
@@ -30,10 +25,12 @@ class MetofficeClient:
         # Create a logger instance for messages from the API client
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initialising Met Office API Client")
+        # Setup requests session with authentication header
         self._session = requests.Session()
-        self._api_key = api_key
+        self._session.headers = {"accept": "application/json", "apikey": api_key}
+        # Setup the REST client API and forecast results dataclass
         self._api = Metoffice
-        self._api_parms = Metoffice.parameters
+        self._forecast = self._api.responses()
 
     def __enter__(self):
         """Entry function for the Met Office Client."""
@@ -65,82 +62,110 @@ class MetofficeClient:
         self._api.parameters.longitude = self._validate_coordinate(longitude, -180, 180, "Longitude")
 
 
-    def get_hourly(self) -> HFeatureCollection:
-        """Fetches the hourly weather forecast data by making an API call to the specified endpoint.
-        Returns:
-            HFeatureCollection: A dataclass with the hourly forecast response
-        """
-        self.logger.info("Getting the hourly forecast")
-        return self._call_api(api=Metoffice.apilist.Hourly)
+    def _check_data(self, forecast : ForecastType) -> None:
+        """ Check if we already have current data for the desired forecast"""
+        data = getattr(self._forecast, forecast.value)
+        if (hasattr(data,"type")):
+            time_since_model = datetime.now().astimezone() - data.features[0].properties.modelRunDate
+            if (time_since_model < timedelta(hours=6)):
+                self.logger.info(f"Recent {forecast.value} forecast exists - using this data")                
+                return
+        self._get_forecast(forecast)
+            
 
-    def get_three_hourly(self) -> TFeatureCollection:
-        """Fetches the three hourly weather forecast data by making an API call to the specified endpoint.
-        Returns:
-            TFeatureCollection: A dataclass with the three hourly forecast response
+    def _get_forecast(self, forecast: ForecastType) -> None:
+        """Fetches the requested forecast data by making an API call to the specified endpoint
+           and stores the response for later use
         """
-        self.logger.info("Getting the three hourly forecast")
-        return self._call_api(api=Metoffice.apilist.ThreeHourly)
+        self.logger.info(f"Getting the {forecast.value} forecast")
+        setattr(self._forecast, forecast.value, self._call_api(api=getattr(Metoffice.apilist, forecast.value)))
 
-    def get_daily(self) -> DFeatureCollection:
-        """Fetches the daily weather forecast data by making an API call to the specified endpoint.
-        Returns:
-            DFeatureCollection: A dataclass with the daily forecast response.
-        """
-        self.logger.info("Getting the daily forecast")
-        return self._call_api(api=Metoffice.apilist.Daily)
-
-    def get_time_series(self, api_response) -> list:
-        """Extracts the time series data from the given API response.
+    def get_time_series(self, forecast: ForecastType) -> list:
+        """Extracts the time series data from the given type of forecast.
         Args:
-            api_response (object): The response object from the API containing weather data.
+            forecast (ForecastType): The type of forecast to get the data from
         Returns:
             list: A list of time series data extracted from the API response.
         """
-        return api_response.features[0].properties.timeSeries
+        self._check_data(forecast)
+        return getattr(self._forecast, forecast.value).features[0].properties.timeSeries
 
-    def get_location(self, api_response) -> str:
+
+    def get_todays_forecast(self) -> object:
+        """Get the current days forecast information from the daily forecast response.
+        Returns:
+            object: The current days time series data extracted from the API response.
+        """
+        self._check_data(ForecastType.DAILY)        
+        for data in self.get_time_series(ForecastType.DAILY):
+            if data.time.date() == datetime.now().astimezone().date():
+                return data
+
+    def get_current_hour_forecast(self) -> list:
+        """Get the current hour forecast information from the hourly forecast response.
+        Returns:
+            object: The current hours time series data extracted from the API response.
+        """
+        self._check_data(ForecastType.HOURLY)                
+        for data in self.get_time_series(ForecastType.HOURLY):
+            if (data.time == datetime.now().astimezone().replace(minute=0, second=0, microsecond=0)):
+                return data
+
+    def get_location(self, forecast: ForecastType  = ForecastType.DAILY) -> str:
         """Extracts the location name from the given API response.
         Args:
-            api_response (object): The response object from the API containing weather data.
+            forecast (ForecastType): The type of forecast to get the data from
         Returns:
             str: The location name for the weather data.
         """
-        return api_response.features[0].properties.location.name
+        self._check_data(forecast)        
+        return getattr(self._forecast, forecast.value).features[0].properties.location.name
 
-    def get_model_run_date(self, api_response) -> datetime:
+    def get_height(self, forecast: ForecastType = ForecastType.DAILY) -> int:
+        """Extracts the height from the given API response.
+        Args:
+            forecast (ForecastType): The type of forecast to get the data from
+        Returns:
+            int: The height of the location for the weather data.
+        """
+        self._check_data(forecast)          
+        return getattr(self._forecast, forecast.value).features[0].geometry.coordinates[2]
+
+    def get_model_run_date(self, forecast: ForecastType = ForecastType.DAILY) -> datetime:
         """Extracts the run date from the given API response.
         Args:
-            api_response (object): The response object from the API containing weather data.
+            forecast (ForecastType): The type of forecast to get the data from
         Returns:
-            datetime: The rundate for the weather data.
+            datetime: The model run datetime for the weather data.
         """
-        return api_response.features[0].properties.modelRunDate
+        self._check_data(forecast)           
+        return getattr(self._forecast, forecast.value).features[0].properties.modelRunDate
 
-    def get_parameter_description(self, api_response, parameter) -> str:
+    def get_parameter_description(self, forecast: ForecastType, parameter) -> str:
         """Extracts the description for the given parameter from the given API response.
         Args:
-            api_response (object): The response object from the API containing weather data.
+            forecast (ForecastType): The type of forecast to get the data from
             parameter (str): The parameter for which the description is required.
         Returns:
             str: The description for the given parameter.
         """
-        return getattr(api_response.parameters[0], parameter).description
+        self._check_data(forecast)          
+        return getattr(getattr(self._forecast, forecast.value).parameters[0], parameter).description
 
-    def get_parameter_unit(self, api_response, parameter) -> str:
+    def get_parameter_unit(self, forecast: ForecastType, parameter) -> str:
         """Extracts the unit for the given parameter from the given API response.
         Args:
-            api_response (object): The response object from the API containing weather data.
+            forecast (ForecastType): The type of forecast to get the data from
             parameter (str): The parameter for which the unit is required.
         Returns:
             str: The unit for the given parameter.
         """
-        return getattr(api_response.parameters[0], parameter).unit.symbol.type
+        self._check_data(forecast)          
+        return getattr(getattr(self._forecast, forecast.value).parameters[0], parameter).unit.symbol.type
 
     def _call_api(self, api: Endpoint = Metoffice.apilist.Daily) -> object:
         """Initialise the arguments required to call one of the REST APIs and then call it returning the results."""
-        self.logger.info(f"Calling API endpoint: {api.name}")
-        # Create a dictionary entry for the header required by the endpoint
-        header = {"accept": "application/json", "apikey": self._api_key}
+        self.logger.info(f"Calling Metoffice API endpoint: {api.name}")
         # Create parameter list from the api definition where the parameter has been set
         params = {
             entry.value: getattr(self._api.parameters, entry.value)
@@ -152,11 +177,11 @@ class MetofficeClient:
         # Call the API endpoint and return the results parsing with the defined dataclass
         try:
             results = self._session.get(
-                url=url, params=params, headers=header, timeout=60
+                url=url, params=params, timeout=60
             )
             results.raise_for_status()
         except requests.exceptions.RequestException as err:
-            self.logger.error(f"Requests error encountered: {err}")
+            self.logger.error(f"Requests error encountered: {err} with url: {url} and params: {params}")
             raise err
         self.logger.debug(
             f"Formatted API results:\n {ujson.dumps(results.json(), indent=2)}"

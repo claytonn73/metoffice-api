@@ -182,7 +182,7 @@ class HourlyTimeSeries(baseclass):
 class HourlyProperties(baseclass):
     location: Location
     requestPointDistance: float
-    modelRunDate: str
+    modelRunDate: datetime
     timeSeries: List[HourlyTimeSeries]
 
 
@@ -362,7 +362,7 @@ class DailyTimeSeries(baseclass):
 class DailyProperties(baseclass):
     location: Location
     requestPointDistance: float
-    modelRunDate: str
+    modelRunDate: datetime
     timeSeries: List[DailyTimeSeries]
 
 
@@ -478,15 +478,17 @@ class ThreeHourTimeSeries(baseclass):
 
 @dataclass(slots=True)
 class ThreeHourProperties(baseclass):
+    """Contains the location and run data for the forecast and the time series data."""
+
     location: Location
     requestPointDistance: float
-    modelRunDate: str
+    modelRunDate: datetime
     timeSeries: List[ThreeHourTimeSeries]
 
 
 @dataclass(slots=True)
 class ThreeHourFeatures(baseclass):
-    """Represents a geographical feature with a specific type, geometry, and properties.
+    """Contains the coordinates for the forcast and a container for additional properties.
 
     Attributes:
         type (str): A label for the response.
@@ -512,7 +514,7 @@ class ThreeHourResponse(baseclass):
     features: List[ThreeHourFeatures]
     parameters: List[ThreeHourParameters] = None
 
-
+#This instance of Endpoint describes the three hourly forecast API call and respons
 ThreeHourly = Endpoint(
     endpoint="sitespecific/v0/point/three-hourly",
     name="Three Hourly Forecast",
@@ -527,16 +529,32 @@ ThreeHourly = Endpoint(
 )
 
 
+@dataclass(slots=True)
+class ForecastData:
+    """ This class is a container for all three types of forecast data responses provided by the API"""
+    Hourly: HourlyResponse = None
+    ThreeHourly: ThreeHourResponse = None
+    Daily: DailyResponse = None
+
+
+class ForecastType(Enum):
+    """ This enum lists the names of the three types of forecast that can be requested"""
+    HOURLY = "Hourly"
+    THREE_HOURLY = "ThreeHourly"
+    DAILY = "Daily"
+
+
 class ConstantList(Enum):
     """This enum lists all the defined constants, making it easy to reference them.
     The Enum value is the instance of the Constant class that describes the constant.
     """
 
-    WeatherCode = WeatherCode
-    Endpoint = Endpoint
+    ForecastType = ForecastType
     ThreeHourForecastMetrics = ThreeHourForecastMetrics
     DailyForecastMetrics = DailyForecastMetrics
     HourlyForecastMetrics = HourlyForecastMetrics
+    WeatherCode = WeatherCode
+
 
 class APIList(Enum):
     """This enum lists all the defined API endpoints, making it easy to reference them.
@@ -554,4 +572,5 @@ Metoffice = RESTClient(
     apilist=APIList,
     parameters=apiparms(),
     constants=ConstantList,
+    responses=ForecastData,
 )

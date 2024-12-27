@@ -120,6 +120,9 @@ class APIArguments:
 class APIParameters:
     """Dataclass describing the set of parameters used by the API endpoints."""
 
+@dataclass
+class APIResponses:
+    """Dataclass describing the set of parameters used by the API endpoints."""
 
 @dataclass
 class RESTClient:
@@ -140,3 +143,4 @@ class RESTClient:
     arguments: APIArguments = None
     parameters: APIParameters = None
     constants: Enum = None
+    responses: APIResponses = None
