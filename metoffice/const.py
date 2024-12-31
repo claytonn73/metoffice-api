@@ -9,7 +9,7 @@ from typing import List
 
 from metoffice.apiconstruct import Endpoint, RESTClient, baseclass
 
-# Only export the Carbon Intensity API description
+# Only export the Metoffice API description
 __all__ = ["Metoffice"]
 
 

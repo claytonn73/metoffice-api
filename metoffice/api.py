@@ -1,4 +1,6 @@
-"""Contains the Met OfficeAPI class and its methods."""
+"""This Python file (api.py) defines a client (MetofficeClient) for interacting with the Met Office DataPoint API.
+It provides methods for fetching weather forecast data (daily and hourly), extracting specific information from
+the responses, and managing API calls. The client handles authentication, data caching, and error handling.."""
 
 import logging
 from datetime import datetime, timedelta
@@ -22,7 +24,7 @@ class MetofficeClient:
     """Class for the Met Office API."""
 
     def __init__(self, api_key: str) -> None:
-        """Initialise the API client. 
+        """Initialise the API client.
         Args:
             api_key (str): The API key for authenticating with the Met Office API.
         """
@@ -69,7 +71,7 @@ class MetofficeClient:
         """Check if we already have current data for the desired forecast"""
         data = getattr(self._forecast, forecast.value)
         if hasattr(data, "type"):
-            time_since_model = (datetime.now().astimezone() - data.features[0].properties.modelRunDate)
+            time_since_model = datetime.now().astimezone() - data.features[0].properties.modelRunDate
             if time_since_model < timedelta(hours=6):
                 self.logger.info(
                     f"Recent {forecast.value} forecast exists from {str(time_since_model).split('.')[0]} ago - using this data"
@@ -100,7 +102,7 @@ class MetofficeClient:
         """
         for data in self.get_time_series(ForecastType.DAILY):
             if data.time.date() == datetime.now().astimezone().date():
-                self.logger.info(f"Returning daily forecast from {data.time.date()}")                
+                self.logger.info(f"Returning daily forecast from {data.time.date()}")
                 return data
 
     def get_current_hour_forecast(self) -> list:
@@ -110,9 +112,8 @@ class MetofficeClient:
         """
         for data in self.get_time_series(ForecastType.HOURLY):
             if data.time == datetime.now().astimezone().replace(minute=0, second=0, microsecond=0):
-                self.logger.info(f"Returning hourly forecast from {data.time}")                                
+                self.logger.info(f"Returning hourly forecast from {data.time}")
                 return data
-
 
     def get_current_hour_forecast_value(self, parameter: HourlyForecastMetrics) -> str:
         """Extracts the unit for the given parameter from the given API response.
@@ -174,7 +175,6 @@ class MetofficeClient:
         """
         self._check_data(forecast)
         return getattr(getattr(self._forecast, forecast.value).parameters[0], parameter).unit.symbol.type
-
 
     def _call_api(self, api: Endpoint = Metoffice.apilist.Daily) -> object:
         """Initialise the arguments required to call one of the REST APIs and then call it returning the results."""
