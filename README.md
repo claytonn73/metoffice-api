@@ -1,7 +1,7 @@
 # Met Office API
 
 **Overview**
-The provides a client for interacting with the Met Office Weather API, providing a convenient interface for retrieving weather forecasts at different time intervals. The MetofficeClient class encapsulates the API interaction logic, handling authentication, request construction, and response parsing.
+This provides a client for interacting with the Met Office Weather API, providing a convenient interface for retrieving weather forecasts at different time intervals. The MetofficeClient class encapsulates the API interaction logic, handling authentication, request construction, and response parsing.
 
 ## Key Components
 
