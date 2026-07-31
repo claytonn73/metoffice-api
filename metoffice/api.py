@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 import requests
 import ujson
 
-from metoffice.const import Metoffice, Endpoint, ForecastType, HourlyForecastMetrics
-
+from metoffice.const import (Endpoint, ForecastType, HourlyForecastMetrics,
+                             HourlyTimeSeries, Metoffice)
 
 # Only export the Met OfficeClient
 __all__ = ["MetofficeClient"]
@@ -23,7 +23,7 @@ class MetofficeError(Exception):
 class MetofficeClient:
     """Class for the Met Office API."""
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str):
         """Initialise the API client.
         Args:
             api_key (str): The API key for authenticating with the Met Office API.
@@ -33,12 +33,12 @@ class MetofficeClient:
         self.logger.info("Initialising Met Office API Client")
         # Setup requests session with authentication header
         self._session = requests.Session()
-        self._session.headers = {"accept": "application/json", "apikey": api_key}
+        self._session.headers.update({"accept": "application/json", "apikey": api_key})
         # Setup the REST client API and forecast results dataclass
         self._api = Metoffice
         self._forecast = self._api.responses()
 
-    def __enter__(self):
+    def __enter__(self) -> "MetofficeClient":
         """Entry function for the Met Office Client."""
         return self
 
@@ -83,7 +83,7 @@ class MetofficeClient:
         """Fetches the requested forecast data by making an API call to the specified endpoint
         and stores the response for later use
         """
-        setattr(self._forecast, forecast.value, self._call_api(api=getattr(Metoffice.apilist, forecast.value)))
+        setattr(self._forecast, forecast.value, self._call_api(api=getattr(Metoffice.apilist, forecast.value).value))
 
     def get_time_series(self, forecast: ForecastType) -> list:
         """Extracts the time series data from the given type of forecast.
@@ -100,18 +100,20 @@ class MetofficeClient:
         Returns:
             object: The current days time series data extracted from the API response.
         """
+        now = datetime.now().astimezone().date()
         for data in self.get_time_series(ForecastType.DAILY):
-            if data.time.date() == datetime.now().astimezone().date():
+            if data.time.date() == now:
                 self.logger.info(f"Returning daily forecast from {data.time.date()}")
                 return data
 
-    def get_current_hour_forecast(self) -> list:
+    def get_current_hour_forecast(self) ->  HourlyTimeSeries | None:
         """Get the current hour forecast information from the hourly forecast response.
         Returns:
             object: The current hours time series data extracted from the API response.
         """
+        now = datetime.now().astimezone().replace(minute=0, second=0, microsecond=0)
         for data in self.get_time_series(ForecastType.HOURLY):
-            if data.time == datetime.now().astimezone().replace(minute=0, second=0, microsecond=0):
+            if data.time == now:
                 self.logger.info(f"Returning hourly forecast from {data.time}")
                 return data
 
@@ -154,7 +156,7 @@ class MetofficeClient:
         self._check_data(forecast)
         return getattr(self._forecast, forecast.value).features[0].properties.modelRunDate
 
-    def get_parameter_description(self, forecast: ForecastType, parameter) -> str:
+    def get_parameter_description(self, forecast: ForecastType, parameter : str) -> str:
         """Extracts the description for the given parameter from the given API response.
         Args:
             forecast (ForecastType): The type of forecast to get the data from
@@ -176,17 +178,18 @@ class MetofficeClient:
         self._check_data(forecast)
         return getattr(getattr(self._forecast, forecast.value).parameters[0], parameter).unit.symbol.type
 
-    def _call_api(self, api: Endpoint = Metoffice.apilist.Daily) -> object:
+    def _call_api(self, api: Endpoint = getattr(Metoffice.apilist, "Daily").value) -> object:
         """Initialise the arguments required to call one of the REST APIs and then call it returning the results."""
         self.logger.info(f"Calling Metoffice API endpoint: {api.name}")
         # Create parameter list from the api definition where the parameter has been set
         params = {
             entry.value: getattr(self._api.parameters, entry.value)
-            for entry in api.value.parms
+            for entry in api.parms
             if getattr(self._api.parameters, entry.value) is not None
         }
         # Create a URL from the supplied information
-        url = f"{self._api.url}/{api.value.endpoint}"
+        url = f"{self._api.url}/{api.endpoint}"
+        self.logger.debug(f"Calling Metoffice API endpoint: {api.name} with url: {url} and params: {params}")
         # Call the API endpoint and return the results parsing with the defined dataclass
         try:
             results = self._session.get(url=url, params=params, timeout=60)
@@ -196,4 +199,4 @@ class MetofficeClient:
             raise err
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug("Formatted API results:\n %s", ujson.dumps(results.json(), indent=2))
-        return api.value.response.parse_kwargs(self, api.value.response, **results.json())
+        return api.response.parse_kwargs(self, api.response, **results.json())

@@ -2,12 +2,12 @@
 Specific Weather API. It provides a comprehensive set of data classes and enums to represent
 weather-related information and API endpoints."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List
+from typing import List, Optional, Type
 
-from metoffice.apiconstruct import Endpoint, RESTClient, baseclass
+from metoffice.apiconstruct import (APIParameters, APIResponses, Endpoint, baseclass)
 
 # Only export the Metoffice API description
 __all__ = ["Metoffice"]
@@ -24,12 +24,12 @@ class APIParms(Enum):
 
 
 @dataclass(slots=True)
-class apiparms:
+class apiparms(APIParameters):
     """Dataclass to hold the parameters for the Met Office API.
     Parameter defaults are set so only changed parameters need to be set."""
 
-    latitude: float = None
-    longitude: float = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     dataSource: str = "BD1"
     excludeParameterMetadata: bool = False
     includeLocationName: bool = True
@@ -100,15 +100,16 @@ class Location(baseclass):
 @dataclass(slots=True)
 class Geometry(baseclass):
     type: str
-    coordinates: List[float]
+    coordinates: List[float] = field(default_factory=list)
 
 
 @dataclass(slots=True)
 class HourlyParameters(baseclass):
-    """This dataclass is a list of descriptions of the hourly forecast variables.
-    It can be used to get descrption and metrics for each parameter
-    """
+    """Descriptions of the hourly forecast variables.
 
+    This can be used to get the description and units for each parameter
+    returned by the hourly forecast API.
+    """
     screenTemperature: Parameter
     screenDewPointTemperature: Parameter
     feelsLikeTemperature: Parameter
@@ -171,11 +172,11 @@ class HourlyTimeSeries(baseclass):
     significantWeatherCode: WeatherCode
     precipitationRate: float
     probOfPrecipitation: int
-    maxScreenAirTemp: float = None
-    minScreenAirTemp: float = None
-    totalPrecipAmount: float = None
-    totalSnowAmount: float = None
-    max10mWindGust: float = None
+    maxScreenAirTemp: Optional[float] = None
+    minScreenAirTemp: Optional[float] = None
+    totalPrecipAmount: Optional[float] = None
+    totalSnowAmount: Optional[float] = None
+    max10mWindGust: Optional[float] = None
 
 
 @dataclass(slots=True)
@@ -183,7 +184,7 @@ class HourlyProperties(baseclass):
     location: Location
     requestPointDistance: float
     modelRunDate: datetime
-    timeSeries: List[HourlyTimeSeries]
+    timeSeries: List[HourlyTimeSeries] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -196,8 +197,8 @@ class HourlyFeatures(baseclass):
 @dataclass(slots=True)
 class HourlyResponse(baseclass):
     type: str
-    features: List[HourlyFeatures]
-    parameters: List[HourlyParameters] = None
+    features: List[HourlyFeatures] = field(default_factory=list)
+    parameters: Optional[List[HourlyParameters]] = field(default_factory=list)
 
 
 Hourly = Endpoint(
@@ -216,8 +217,10 @@ Hourly = Endpoint(
 
 @dataclass(slots=True)
 class DailyParameters(baseclass):
-    """This dataclass is a list of descriptions of the daily forecast variables.
-    It can be used to get descrption and metrics for each parameter
+    """Descriptions of the daily forecast variables.
+
+    This can be used to get the description and units for each parameter
+    returned by the daily forecast API.
     """
 
     midday10MWindSpeed: Parameter
@@ -315,47 +318,47 @@ class DailyTimeSeries(baseclass):
     """This dataclass represents the daily forecast information for a specific day."""
 
     time: datetime
-    midday10MWindSpeed: float = None
-    midnight10MWindSpeed: float = None
-    midday10MWindDirection: int = None
-    midnight10MWindDirection: int = None
-    midday10MWindGust: float = None
-    midnight10MWindGust: float = None
-    middayVisibility: int = None
-    midnightVisibility: int = None
-    middayRelativeHumidity: float = None
-    midnightRelativeHumidity: float = None
-    middayMslp: int = None
-    midnightMslp: int = None
+    midday10MWindSpeed: Optional[float] = None
+    midnight10MWindSpeed: Optional[float] = None
+    midday10MWindDirection: Optional[int] = None
+    midnight10MWindDirection: Optional[int] = None
+    midday10MWindGust: Optional[float] = None
+    midnight10MWindGust: Optional[float] = None
+    middayVisibility: Optional[int] = None
+    midnightVisibility: Optional[int] = None
+    middayRelativeHumidity: Optional[float] = None
+    midnightRelativeHumidity: Optional[float] = None
+    middayMslp: Optional[int] = None
+    midnightMslp: Optional[int] = None
     nightSignificantWeatherCode: WeatherCode = WeatherCode.NOT_AVAILABLE
-    dayMaxScreenTemperature: float = None
-    nightMinScreenTemperature: float = None
-    dayUpperBoundMaxTemp: float = None
-    nightUpperBoundMinTemp: float = None
-    dayLowerBoundMaxTemp: float = None
-    nightLowerBoundMinTemp: float = None
-    nightMinFeelsLikeTemp: float = None
-    dayUpperBoundMaxFeelsLikeTemp: float = None
-    nightUpperBoundMinFeelsLikeTemp: float = None
-    dayLowerBoundMaxFeelsLikeTemp: float = None
-    nightLowerBoundMinFeelsLikeTemp: float = None
+    dayMaxScreenTemperature: Optional[float] = None
+    nightMinScreenTemperature: Optional[float] = None
+    dayUpperBoundMaxTemp: Optional[float] = None
+    nightUpperBoundMinTemp: Optional[float] = None
+    dayLowerBoundMaxTemp: Optional[float] = None
+    nightLowerBoundMinTemp: Optional[float] = None
+    nightMinFeelsLikeTemp: Optional[float] = None
+    dayUpperBoundMaxFeelsLikeTemp: Optional[float] = None
+    nightUpperBoundMinFeelsLikeTemp: Optional[float] = None
+    dayLowerBoundMaxFeelsLikeTemp: Optional[float] = None
+    nightLowerBoundMinFeelsLikeTemp: Optional[float] = None
     daySignificantWeatherCode: WeatherCode = WeatherCode.NOT_AVAILABLE
-    dayMaxFeelsLikeTemp: float = None
-    maxUvIndex: int = None
-    dayProbabilityOfPrecipitation: int = None
-    nightProbabilityOfPrecipitation: int = None
-    dayProbabilityOfSnow: int = None
-    nightProbabilityOfSnow: int = None
-    dayProbabilityOfHeavySnow: int = None
-    nightProbabilityOfHeavySnow: int = None
-    dayProbabilityOfRain: int = None
-    nightProbabilityOfRain: int = None
-    dayProbabilityOfHeavyRain: int = None
-    nightProbabilityOfHeavyRain: int = None
-    dayProbabilityOfHail: int = None
-    nightProbabilityOfHail: int = None
-    dayProbabilityOfSferics: int = None
-    nightProbabilityOfSferics: int = None
+    dayMaxFeelsLikeTemp: Optional[float] = None
+    maxUvIndex: Optional[int] = None
+    dayProbabilityOfPrecipitation: Optional[int] = None
+    nightProbabilityOfPrecipitation: Optional[int] = None
+    dayProbabilityOfSnow: Optional[int] = None
+    nightProbabilityOfSnow: Optional[int] = None
+    dayProbabilityOfHeavySnow: Optional[int] = None
+    nightProbabilityOfHeavySnow: Optional[int] = None
+    dayProbabilityOfRain: Optional[int] = None
+    nightProbabilityOfRain: Optional[int] = None
+    dayProbabilityOfHeavyRain: Optional[int] = None
+    nightProbabilityOfHeavyRain: Optional[int] = None
+    dayProbabilityOfHail: Optional[int] = None
+    nightProbabilityOfHail: Optional[int] = None
+    dayProbabilityOfSferics: Optional[int] = None
+    nightProbabilityOfSferics: Optional[int] = None
 
 
 @dataclass(slots=True)
@@ -363,7 +366,7 @@ class DailyProperties(baseclass):
     location: Location
     requestPointDistance: float
     modelRunDate: datetime
-    timeSeries: List[DailyTimeSeries]
+    timeSeries: List[DailyTimeSeries] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -378,8 +381,8 @@ class DailyResponse(baseclass):
     """This dataclass is the container for the response for the daily forecast API."""
 
     type: str
-    features: List[DailyFeatures]
-    parameters: List[DailyParameters] = None
+    features: List[DailyFeatures] = field(default_factory=list)
+    parameters: Optional[List[DailyParameters]] = field(default_factory=list)
 
 
 Daily = Endpoint(
@@ -483,7 +486,7 @@ class ThreeHourProperties(baseclass):
     location: Location
     requestPointDistance: float
     modelRunDate: datetime
-    timeSeries: List[ThreeHourTimeSeries]
+    timeSeries: List[ThreeHourTimeSeries] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -511,10 +514,10 @@ class ThreeHourResponse(baseclass):
     """
 
     type: str
-    features: List[ThreeHourFeatures]
-    parameters: List[ThreeHourParameters] = None
+    features: List[ThreeHourFeatures] = field(default_factory=list)
+    parameters: Optional[List[ThreeHourParameters]] = field(default_factory=list)
 
-#This instance of Endpoint describes the three hourly forecast API call and respons
+# This instance of Endpoint describes the three hourly forecast API call and respons
 ThreeHourly = Endpoint(
     endpoint="sitespecific/v0/point/three-hourly",
     name="Three Hourly Forecast",
@@ -530,15 +533,21 @@ ThreeHourly = Endpoint(
 
 
 @dataclass(slots=True)
-class ForecastData:
-    """ This class is a container for all three types of forecast data responses provided by the API"""
-    Hourly: HourlyResponse = None
-    ThreeHourly: ThreeHourResponse = None
-    Daily: DailyResponse = None
+class ForecastData(APIResponses):
+    """Container for all three types of forecast data responses provided by the API.
+    
+    Attributes:
+        Hourly: Response containing hourly forecast data
+        ThreeHourly: Response containing three-hourly forecast data
+        Daily: Response containing daily forecast data
+    """
+    Hourly: Optional[HourlyResponse] = None
+    ThreeHourly: Optional[ThreeHourResponse] = None
+    Daily: Optional[DailyResponse] = None
 
 
 class ForecastType(Enum):
-    """ This enum lists the names of the three types of forecast that can be requested"""
+    """Names of the three types of forecast that can be requested."""
     HOURLY = "Hourly"
     THREE_HOURLY = "ThreeHourly"
     DAILY = "Daily"
@@ -564,6 +573,25 @@ class APIList(Enum):
     Daily = Daily
     Hourly = Hourly
     ThreeHourly = ThreeHourly
+
+@dataclass
+class RESTClient:
+    """This dataclass defines the set of information necessary to use a REST API.
+
+    Attributes:
+        url: The URL used for the REST API
+        auth: The type of authorisation used
+        apis: A list of the API Endpoints
+        apiargs: A dataclass describing the set of arguments used by the endpoints
+        apiparms: A dataclass describing the set of parameters used by the endpoints
+        constants: A list of constants
+    """
+
+    url: str
+    responses: Type[APIResponses]    
+    apilist: Type[Enum]    
+    parameters: apiparms 
+    constants: Optional[Type[Enum]] = None
 
 
 # This instance of RESTClient describes the Metoffice API
