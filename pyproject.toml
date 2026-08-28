@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=65", "wheel >= 0.38", "pep517>=0.11"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metoffice"
+version = "0.0.1"
+dependencies = ["requests", "python-dotenv", "influxdb", "ujson", "ciso8601"]
+authors = [{ name = "Nick Clayton"}]
+description = "API for Metoffice Site Specific API"
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/claytonn73/metoffice-api"

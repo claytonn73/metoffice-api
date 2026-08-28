@@ -8,7 +8,7 @@ import logging
 from dataclasses import dataclass, field, fields, is_dataclass
 from datetime import date, datetime, time
 from enum import Enum
-from typing import get_origin
+from typing import Any, Union, get_origin
 
 import ciso8601
 
@@ -32,6 +32,9 @@ class baseclass:
             if entry_value is None:
                 continue
             entry_type = entry.type
+            # Handle optional types
+            if get_origin(entry_type) is Union:
+                entry_type = entry_type.__args__[0]
             # Order of checks is based on frequency of data within API responses
             if entry_type in {float, str, int, bool}:
                 continue
@@ -59,7 +62,7 @@ class baseclass:
                     except KeyError:
                         setattr(self, entry.name, entry_type(entry_value))
                     except TypeError:
-                        pass
+                        pass            
             # If the entry type is a dataclass and the entry is not null then parse the entry into the dataclass
             elif (is_dataclass(entry_type)) and (bool(entry_value)):
                 setattr(self, entry.name, self.parse_kwargs(entry_type, **(entry_value)))
@@ -91,12 +94,12 @@ class baseclass:
 class Endpoint:
     """Dataclass describing API endpoints and the data they return."""
 
-    response: object
-    sample: str = None
-    name: str = None
+    response: type[Any]
+    sample: str | None = None
+    name: str | None = None
     endpoint: str = ""
     type: str = "get"
-    auth: str = None
+    auth: str | None = None
     arguments: list = field(default_factory=list)
     parms: list = field(default_factory=list)
 
@@ -130,9 +133,10 @@ class RESTClient:
     """
 
     url: str
-    apilist: Enum
-    auth: str = None
-    arguments: APIArguments = None
-    parameters: APIParameters = None
-    constants: Enum = None
-    responses: APIResponses = None
+    responses: type[APIResponses]    
+    apilist: type[Enum]    
+    parameters: APIParameters | None = None
+    arguments: APIArguments | None = None
+    auth: str | None = None
+    constants: type[Enum] | None = None
+
