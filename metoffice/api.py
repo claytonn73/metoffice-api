@@ -93,7 +93,10 @@ class MetofficeClient:
             )
             if time_since_model < timedelta(hours=6):
                 logger.info(
-                    f"Recent {forecast.value} forecast exists from {str(time_since_model).split('.')[0]} ago - using this data"
+                    "Recent %s forecast exists from %s ago - using this data",
+                    forecast.value,
+                    # str(time_since_model).split(".")[0],
+                    str(time_since_model).split('.', maxsplit=1)[0],
                 )
                 return
         self._get_forecast(forecast)
@@ -106,7 +109,7 @@ class MetofficeClient:
         """Fetches the requested forecast data by making an API call to the specified endpoint
         and stores the response for later use
         """
-        logger.info(f"Fetching {forecast.value} forecast data from Met Office API")
+        logger.info("Fetching %s forecast data from Met Office API", forecast.value)
         setattr(
             self._forecast,
             forecast.value,
@@ -145,9 +148,9 @@ class MetofficeClient:
         now = datetime.now().astimezone().date()
         for data in self.get_time_series(ForecastType.DAILY):
             if data.time.date() == now:
-                logger.info(f"Returning daily forecast from {data.time.date()}")
+                logger.info("Returning daily forecast from %s", data.time.date())
                 return data
-        logger.info(f"Could not find daily forecast for {now}")
+            logger.info("Could not find daily forecast for %s", now)
         return None
 
     def get_current_hour_forecast(self) -> HourlyTimeSeries | None:
@@ -158,9 +161,9 @@ class MetofficeClient:
         now = datetime.now().astimezone().replace(minute=0, second=0, microsecond=0)
         for data in self.get_time_series(ForecastType.HOURLY):
             if data.time == now:
-                logger.info(f"Returning hourly forecast from {data.time}")
+                logger.info("Returning hourly forecast from %s", data.time)
                 return data
-        logger.info(f"Could not find hourly forecast for {now}")
+            logger.info("Could not find hourly forecast for %s", now)
         return None
 
     def get_current_hour_forecast_value(
@@ -233,7 +236,7 @@ class MetofficeClient:
         self, api: Endpoint = getattr(Metoffice.apilist, ForecastType.DAILY.value).value
     ) -> object:
         """Initialise the arguments required to call one of the REST APIs and then call it returning the results."""
-        logger.info(f"Calling Metoffice API endpoint: {api.name}")
+        logger.info("Calling Metoffice API endpoint: %s", api.name)
         # Create parameter list from the api definition where the parameter has been set
         params = {
             entry.value: getattr(self._api.parameters, entry.value)
@@ -243,15 +246,20 @@ class MetofficeClient:
         # Create a URL from the supplied information
         url = f"{self._api.url}/{api.endpoint}"
         logger.debug(
-            f"Calling Metoffice API endpoint: {api.name} with url: {url} and params: {params}"
+            "Calling Metoffice API endpoint: %s with url: %s and params: %s",
+            api.name,
+            url,
+            params,
         )
         # Call the API endpoint and return the results parsing with the defined dataclass
         try:
             results = self._session.get(url=url, params=params, timeout=60)
             results.raise_for_status()
         except requests.exceptions.RequestException:
-            logger.error(f"Requests error encountered with url: {url} and params: {params}")
+            logger.error("Requests error encountered with url: %s and params: %s", url, params)
             raise
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug("Formatted API results:\n %s", ujson.dumps(results.json(), indent=2))
+            logger.debug(
+                "Formatted API results:\n %s", ujson.dumps(results.json(), indent=2)
+            )
         return api.response.parse_kwargs(self, api.response, **results.json())
