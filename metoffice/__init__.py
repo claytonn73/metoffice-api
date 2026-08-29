@@ -1,4 +1,5 @@
 """Metoffice API client ."""
+
 import logging
 
 from .api import MetofficeClient

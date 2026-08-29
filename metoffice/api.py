@@ -11,12 +11,15 @@ import requests
 import ujson
 
 from metoffice.const import (
+    DailyResponse,
     DailyTimeSeries,
     Endpoint,
     ForecastType,
     HourlyForecastMetrics,
+    HourlyResponse,
     HourlyTimeSeries,
     Metoffice,
+    ThreeHourResponse,
     ThreeHourTimeSeries,
 )
 
@@ -95,7 +98,6 @@ class MetofficeClient:
                 logger.info(
                     "Recent %s forecast exists from %s ago - using this data",
                     forecast.value,
-                    # str(time_since_model).split(".")[0],
                     str(time_since_model).split('.', maxsplit=1)[0],
                 )
                 return
@@ -117,17 +119,14 @@ class MetofficeClient:
         )
 
     @overload
-    def get_time_series(
-        self, forecast: Literal[ForecastType.HOURLY]
-    ) -> list[HourlyTimeSeries]: ...
+    def get_time_series(self, forecast: Literal[ForecastType.HOURLY]) -> list[HourlyTimeSeries]: ...
+    
     @overload
-    def get_time_series(
-        self, forecast: Literal[ForecastType.THREE_HOURLY]
-    ) -> list[ThreeHourTimeSeries]: ...
+    def get_time_series(self, forecast: Literal[ForecastType.THREE_HOURLY]) -> list[ThreeHourTimeSeries]: ...
+    
     @overload
-    def get_time_series(
-        self, forecast: Literal[ForecastType.DAILY]
-    ) -> list[DailyTimeSeries]: ...
+    def get_time_series(self, forecast: Literal[ForecastType.DAILY]) -> list[DailyTimeSeries]: ...
+    
     def get_time_series(
         self, forecast: ForecastType
     ) -> list[ThreeHourTimeSeries] | list[HourlyTimeSeries] | list[DailyTimeSeries]:
@@ -232,9 +231,7 @@ class MetofficeClient:
         forecast_obj = self._get_forecast_obj(forecast)
         return getattr(forecast_obj.parameters[0], parameter).unit.symbol.type
 
-    def _call_api(
-        self, api: Endpoint = getattr(Metoffice.apilist, ForecastType.DAILY.value).value
-    ) -> object:
+    def _call_api(self, api: Endpoint) -> ThreeHourResponse | HourlyResponse | DailyResponse:
         """Initialise the arguments required to call one of the REST APIs and then call it returning the results."""
         logger.info("Calling Metoffice API endpoint: %s", api.name)
         # Create parameter list from the api definition where the parameter has been set
@@ -262,4 +259,4 @@ class MetofficeClient:
             logger.debug(
                 "Formatted API results:\n %s", ujson.dumps(results.json(), indent=2)
             )
-        return api.response.parse_kwargs(self, api.response, **results.json())
+        return api.response.parse_kwargs(self, api.response, **results.json())  # type: ignore

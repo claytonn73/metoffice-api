@@ -8,22 +8,27 @@ import logging
 from dataclasses import dataclass, field, fields, is_dataclass
 from datetime import date, datetime, time
 from enum import Enum
-from typing import Any, get_args, get_origin
+from typing import get_args, get_origin
 
 import ciso8601
 
 logger = logging.getLogger(__name__)
 
 
-dataclass(slots=True)
+@dataclass(slots=True)
 class baseclass:
     """This dataclass provides the post_init code to handle the nested dataclasses
     and formatting of datetime entries"""
 
-    def parse_kwargs(self, cls, **kwargs: dict):
+    def parse_kwargs(self, cls, **kwargs: dict): 
         # If the key is in our reserved map, rename it; otherwise keep it as-is
-        reserved_map = {'class': 'class_', 'for': 'for_',
-                        'from': 'from_', 'to': 'to_', 'list': 'list_'}
+        reserved_map = {
+            "class": "class_",
+            "for": "for_",
+            "from": "from_",
+            "to": "to_",
+            "list": "list_",
+        }
 
         for key in list(kwargs.keys()):
             if key in reserved_map:
@@ -33,11 +38,11 @@ class baseclass:
         for k in kwargs:
             if k not in cls.__match_args__:
                 logger.error(
-                    "%s got an unexpected keyword argument %s", cls.__name__, k)
-        return cls(**{
-            key: value for key, value in kwargs.items()
-            if key in cls.__match_args__
-        })
+                    "%s got an unexpected keyword argument %s", cls.__name__, k
+                )
+        return cls(
+            **{key: value for key, value in kwargs.items() if key in cls.__match_args__}
+        )
 
     def process_enum(self, entry_type: type[Enum], entry_value: str) -> Enum | str:
         """Process an Enum entry type"""
@@ -50,76 +55,65 @@ class baseclass:
 
     def is_optional(self, entry):
         return type(None) in get_args(entry)
-    
-   
+
     def __post_init__(self) -> None:  # pylint: disable=too-complex
-        # Create list of primitive types once rather than for each entry
-        primitive_types = (float, str, int, bool)        
+         # Create list of primitive types once rather than for each entry
+        primitive_types = (float, str, int, bool)
         for entry in fields(self):
-            # Order of checks is based on frequency of data within API responses              
-            # If the entry type is a primitive type then we don't need to process it
+            # Order of checks is based on frequency of data within API responses
+            # If the entry type is optional then get the first type that is not None
             if self.is_optional(entry_type := entry.type):
                 entry_type = next(
-                    field_type for field_type in get_args(entry_type)
-                    if not (field_type is type(None))
-                )            
+                    field_type
+                    for field_type in get_args(entry_type)
+                    if field_type is not type(None)
+                )
+            # If the entry type is a primitive type then we don't need to process it                
             if entry_type in primitive_types:
-                continue                           
+                continue
             # If the item is empty we don't need to process it
             if not (entry_value := getattr(self, entry.name)):
-                continue           
-            # If the entry type is datetime then convert it from a string to a datetime object            
+                continue
+            # If the entry type is datetime then convert it from a string to a datetime object
             if entry_type is datetime:
                 setattr(self, entry.name, ciso8601.parse_datetime(entry_value))
             # If the entry type is date then convert it from a string to a date object
             elif entry_type is date:
-                setattr(self, entry.name, ciso8601.parse_datetime(
-                    entry_value).date())
+                setattr(self, entry.name, ciso8601.parse_datetime(entry_value).date())
             # If the entry type is time then convert it from a string to a time object
             elif entry_type is time:
-                setattr(self, entry.name, ciso8601.parse_datetime(
-                    entry_value).time())
+                setattr(self, entry.name, ciso8601.parse_datetime(entry_value).time())
             # If the entry type is an Enum then convert it to an Enum entry
             elif isinstance(entry_type, type) and issubclass(entry_type, Enum):
-                setattr(self, entry.name, self.process_enum(
-                    entry_type, entry_value))                
+                setattr(self, entry.name, self.process_enum(entry_type, entry_value))
             # If the entry type is a list
             elif get_origin(entry_type) is list:
                 list_type: type = get_args(entry_type)[0]
                 # If the type of the list entry is a dataclass then parse each entry of the list into the dataclass
                 if (is_dataclass(list_type)) and (bool(entry_value)):
+                    # Iterate over the list and parse each entry into the dataclass
                     for index, data in enumerate(entry_value):
-                        entry_value[index] = self.parse_kwargs(
-                            list_type, **(data))
+                        entry_value[index] = self.parse_kwargs(list_type, **(data))
                 # If the type of the list entry is an Enum then convert it to an Enum entry
                 elif isinstance(list_type, type) and issubclass(list_type, Enum):
-                    setattr(
-                        self,
-                        entry.name,
-                        [self.process_enum(list_type, data)
-                         for data in entry_value],
-                    )
+                    setattr(self, entry.name, [self.process_enum(list_type, data) for data in entry_value])
             # If the entry type is a dataclass and the entry is not null then parse the entry into the dataclass
             elif (is_dataclass(entry_type)) and (bool(entry_value)):
                 setattr(
-                    self, entry.name, self.parse_kwargs(
-                        entry_type, **(entry_value))
-                )     
+                    self, entry.name, self.parse_kwargs(entry_type, **(entry_value))
+                )
             # If the entry type is a dict and the entry is not null
             elif (get_origin(entry_type) is dict) and (bool(entry_value)):
                 # Create a new dict in case we have to change the index
                 new_dict = {}
-                for index, data in enumerate(entry_value):
+                keys_type, value_type = get_args(entry_type)                
+                for data in entry_value:
                     # if the dict value is a dataclass
-                    if is_dataclass(entry_type.__args__[1]):
-                        entry_value[data] = self.parse_kwargs(
-                            entry_type.__args__[1], **(entry_value[data])
-                        )
+                    if is_dataclass(value_type):
+                        entry_value[data] = self.parse_kwargs(value_type, **(entry_value[data]))
                     # if the dict index is an enum
-                    if isinstance(entry_type.__args__[0], type) and issubclass(entry_type.__args__[0], Enum):
-                        new_dict[getattr(entry_type.__args__[0], data)] = entry_value[
-                            data
-                        ]
+                    if isinstance(keys_type, type) and issubclass(keys_type, Enum):
+                        new_dict[getattr(keys_type, data)] = entry_value[data]
                     else:
                         new_dict[data] = entry_value[data]
                 setattr(self, entry.name, new_dict)
@@ -128,7 +122,7 @@ class baseclass:
 class Endpoint:
     """Dataclass describing API endpoints and the data they return."""
 
-    response: object
+    response: type[baseclass]
     sample: str | None = None
     name: str | None = None
     endpoint: str = ""
@@ -167,11 +161,9 @@ class RESTClient:
     """
 
     url: str
-    responses: type[APIResponses]    
-    apilist: type[Enum]    
+    responses: type[APIResponses]
+    apilist: type[Enum]
     parameters: APIParameters | None = None
     arguments: APIArguments | None = None
     auth: str | None = None
     constants: type[Enum] | None = None
-
-
