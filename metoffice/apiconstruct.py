@@ -56,19 +56,18 @@ class baseclass:
         # Create list of primitive types once rather than for each entry
         primitive_types = (float, str, int, bool)        
         for entry in fields(self):
-            # print(f"entry.name: {entry.name}, entry.type: {entry.type}")
             # Order of checks is based on frequency of data within API responses              
             # If the entry type is a primitive type then we don't need to process it
-            if (entry_type := entry.type) in primitive_types:
+            if self.is_optional(entry_type := entry.type):
+                entry_type = next(
+                    field_type for field_type in get_args(entry_type)
+                    if not (field_type is type(None))
+                )            
+            if entry_type in primitive_types:
                 continue                           
             # If the item is empty we don't need to process it
             if not (entry_value := getattr(self, entry.name)):
                 continue           
-            if self.is_optional(entry_type):
-                entry_type = next(
-                    field_type for field_type in get_args(entry_type)
-                    if not isinstance(None, field_type)
-                )
             # If the entry type is datetime then convert it from a string to a datetime object            
             if entry_type is datetime:
                 setattr(self, entry.name, ciso8601.parse_datetime(entry_value))
@@ -129,7 +128,7 @@ class baseclass:
 class Endpoint:
     """Dataclass describing API endpoints and the data they return."""
 
-    response: type[Any]
+    response: object
     sample: str | None = None
     name: str | None = None
     endpoint: str = ""
@@ -174,4 +173,5 @@ class RESTClient:
     arguments: APIArguments | None = None
     auth: str | None = None
     constants: type[Enum] | None = None
+
 
