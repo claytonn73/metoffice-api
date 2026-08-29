@@ -62,14 +62,10 @@ class MetofficeClient:
         """Close the requests session."""
         self._session.close()
 
-    def _validate_coordinate(
-        self, value: float, min_val: float, max_val: float, coord_type: str
-    ) -> float:
+    def _validate_coordinate(self, value: float, min_val: float, max_val: float, coord_type: str) -> float:
         """Validate and return coordinate value."""
         if not isinstance(value, (int, float)) or not (min_val <= value <= max_val):
-            raise MetofficeError(
-                f"{coord_type} must be a number between {min_val} and {max_val}."
-            )
+            raise MetofficeError(f"{coord_type} must be a number between {min_val} and {max_val}.")
         return value
 
     def set_coordinates(self, latitude: float, longitude: float) -> None:
@@ -80,25 +76,19 @@ class MetofficeClient:
         Raises:
             MetofficeError: If the latitude or longitude are not a float or is not within the range allowed.
         """
-        self._api.parameters.latitude = self._validate_coordinate(
-            latitude, -85, 85, "Latitude"
-        )
-        self._api.parameters.longitude = self._validate_coordinate(
-            longitude, -180, 180, "Longitude"
-        )
+        self._api.parameters.latitude = self._validate_coordinate(latitude, -85, 85, "Latitude")
+        self._api.parameters.longitude = self._validate_coordinate(longitude, -180, 180, "Longitude")
 
     def _refresh_data(self, forecast: ForecastType) -> None:
         """Check if we already have current data for the desired forecast"""
         data = getattr(self._forecast, forecast.value)
         if hasattr(data, "type"):
-            time_since_model = (
-                datetime.now().astimezone() - data.features[0].properties.modelRunDate
-            )
+            time_since_model = datetime.now().astimezone() - data.features[0].properties.modelRunDate
             if time_since_model < timedelta(hours=6):
                 logger.info(
                     "Recent %s forecast exists from %s ago - using this data",
                     forecast.value,
-                    str(time_since_model).split('.', maxsplit=1)[0],
+                    str(time_since_model).split(".", maxsplit=1)[0],
                 )
                 return
         self._get_forecast(forecast)
@@ -120,13 +110,13 @@ class MetofficeClient:
 
     @overload
     def get_time_series(self, forecast: Literal[ForecastType.HOURLY]) -> list[HourlyTimeSeries]: ...
-    
+
     @overload
     def get_time_series(self, forecast: Literal[ForecastType.THREE_HOURLY]) -> list[ThreeHourTimeSeries]: ...
-    
+
     @overload
     def get_time_series(self, forecast: Literal[ForecastType.DAILY]) -> list[DailyTimeSeries]: ...
-    
+
     def get_time_series(
         self, forecast: ForecastType
     ) -> list[ThreeHourTimeSeries] | list[HourlyTimeSeries] | list[DailyTimeSeries]:
@@ -165,9 +155,7 @@ class MetofficeClient:
             logger.info("Could not find hourly forecast for %s", now)
         return None
 
-    def get_current_hour_forecast_value(
-        self, parameter: HourlyForecastMetrics
-    ) -> str | int | float | None:
+    def get_current_hour_forecast_value(self, parameter: HourlyForecastMetrics) -> str | int | float | None:
         """Extracts the unit for the given parameter from the given API response.
         Args:
             parameter (str): The parameter for which the unit is required.
@@ -197,9 +185,7 @@ class MetofficeClient:
         forecast_obj = self._get_forecast_obj(forecast)
         return forecast_obj.features[0].geometry.coordinates[2]
 
-    def get_model_run_date(
-        self, forecast: ForecastType = ForecastType.DAILY
-    ) -> datetime:
+    def get_model_run_date(self, forecast: ForecastType = ForecastType.DAILY) -> datetime:
         """Extracts the run date from the given API response.
         Args:
             forecast (ForecastType): The type of forecast to get the data from
@@ -256,7 +242,5 @@ class MetofficeClient:
             logger.error("Requests error encountered with url: %s and params: %s", url, params)
             raise
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "Formatted API results:\n %s", ujson.dumps(results.json(), indent=2)
-            )
+            logger.debug("Formatted API results:\n %s", ujson.dumps(results.json(), indent=2))
         return api.response.parse_kwargs(self, api.response, **results.json())  # type: ignore
